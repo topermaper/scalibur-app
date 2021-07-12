@@ -1,12 +1,12 @@
 /**
  * Copyright 2017 Google Inc. All Rights Reserved.
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,12 @@ import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Location;
+import android.net.ConnectivityManager;
+import android.net.Network;
+import android.net.NetworkCapabilities;
+import android.net.NetworkRequest;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.preference.PreferenceManager;
@@ -34,57 +39,35 @@ import android.provider.Settings;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.RelativeLayout;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+import androidx.recyclerview.widget.DefaultItemAnimator;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.snackbar.Snackbar;
+import com.itene.scalibur.custom.StretchListAdapter;
 import com.itene.scalibur.custom.Utils;
+import com.itene.scalibur.custom.VolleyUtils;
+import com.itene.scalibur.models.Stretch;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Locale;
 
-/**
- * The only activity in this sample.
- *
- * Note: Users have three options in "Q" regarding location:
- * <ul>
- *     <li>Allow all the time</li>
- *     <li>Allow while app is in use, i.e., while app is in foreground</li>
- *     <li>Not allow location at all</li>
- * </ul>
- * Because this app creates a foreground service (tied to a Notification) when the user navigates
- * away from the app, it only needs location "while in use." That is, there is no need to ask for
- * location all the time (which requires additional permissions in the manifest).
- *
- * "Q" also now requires developers to specify foreground service type in the manifest (in this
- * case, "location").
- *
- * Note: For Foreground Services, "P" requires additional permission in manifest. Please check
- * project manifest for more information.
- *
- * Note: for apps running in the background on "O" devices (regardless of the targetSdkVersion),
- * location may be computed less frequently than requested when the app is not in the foreground.
- * Apps that use a foreground service -  which involves displaying a non-dismissable
- * notification -  can bypass the background location limits and request location updates as before.
- *
- * This sample uses a long-running bound and started service for location updates. The service is
- * aware of foreground status of this activity, which is the only bound client in
- * this sample. After requesting location updates, when the activity ceases to be in the foreground,
- * the service promotes itself to a foreground service and continues receiving location updates.
- * When the activity comes back to the foreground, the foreground service stops, and the
- * notification associated with that foreground service is removed.
- *
- * While the foreground service notification is displayed, the user has the option to launch the
- * activity from the notification. The user can also remove location updates directly from the
- * notification. This dismisses the notification and stops the service.
- */
 public class MainActivity extends AppCompatActivity implements
         SharedPreferences.OnSharedPreferenceChangeListener {
     private static final String TAG = com.itene.scalibur.MainActivity.class.getSimpleName();
@@ -101,12 +84,20 @@ public class MainActivity extends AppCompatActivity implements
     // Tracks the bound state of the service.
     private boolean mBound = false;
 
+    private int route_id;
+    List<Stretch> stretchList;
+
     // API endpoints
-    public final static String API_ENDPOINT_GPS = "http://scalibur.itene.com/api/gps/";
+    public final static String API_GET_CONFIRMED_ROUTES = "http://scalibur.itene.com/api/routes/Kozani/confirmed/list";
+    public final static String API_GET_ROUTE_DRIVE = "http://scalibur.itene.com/api/routes/drive/"; // Add <id> after the url
+    public final static String API_POST_GPS = "http://scalibur.itene.com/api/gps/";
+    public final static String API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4ODQwNjk5MDgsImlhdCI6MTYyNDg2OTkwOCwic3ViIjoxfQ.TMo6udWhG8RvBcpMHjZZ-6z56_gK50yJvPrF2HFqkaU";
 
     // UI elements.
     private Button mRequestLocationUpdatesButton;
     private Button mRemoveLocationUpdatesButton;
+    private StretchListAdapter mAdapter;
+    private RecyclerView recyclerView;
 
     // Monitors the state of the connection to the service.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -145,8 +136,15 @@ public class MainActivity extends AppCompatActivity implements
         PreferenceManager.getDefaultSharedPreferences(this)
                 .registerOnSharedPreferenceChangeListener(this);
 
+        // Load current_route
+        Intent intent = getIntent();
+        route_id = intent.getIntExtra("route_id",0);
+        getRouteToDrive(route_id);
+
         mRequestLocationUpdatesButton = (Button) findViewById(R.id.request_location_updates_button);
         mRemoveLocationUpdatesButton = (Button) findViewById(R.id.remove_location_updates_button);
+
+        recyclerView = (RecyclerView) findViewById(R.id.routeList_view);
 
         mRequestLocationUpdatesButton.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -154,7 +152,7 @@ public class MainActivity extends AppCompatActivity implements
                 if (!checkPermissions()) {
                     requestPermissions();
                 } else {
-                    if(mService != null)
+                    if (mService != null)
                         mService.requestLocationUpdates();
                     else
                         Toast.makeText(com.itene.scalibur.MainActivity.this, "Service is not available", Toast.LENGTH_SHORT).show();
@@ -209,7 +207,7 @@ public class MainActivity extends AppCompatActivity implements
      * Returns the current state of the permissions needed.
      */
     private boolean checkPermissions() {
-        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
+        return PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
                 Manifest.permission.ACCESS_FINE_LOCATION);
     }
 
@@ -297,6 +295,8 @@ public class MainActivity extends AppCompatActivity implements
         public void onReceive(Context context, Intent intent) {
             Location location = intent.getParcelableExtra(LocationUpdatesService.EXTRA_LOCATION);
             if (location != null) {
+                //ToDO: Change call to obtain ids from previous calls
+                sendGPS(1, route_id, "GPS event", location);
                 Toast.makeText(com.itene.scalibur.MainActivity.this, Utils.getLocationText(location),
                         Toast.LENGTH_SHORT).show();
             }
@@ -321,55 +321,85 @@ public class MainActivity extends AppCompatActivity implements
             mRemoveLocationUpdatesButton.setEnabled(false);
         }
     }
-    /*
-    private void sendNewMesure(int user_id, int measure, JSONObject data) {
+
+    private void sendGPS(int user_id, int route_id, String event, Location location) {
         try {
-            JSONObject postparams = new JSONObject();
-            postparams.put("user_id", user_id);
-            postparams.put("dato_id", measure);
-            postparams.put("tablet_token", TABLET_TOKEN);
+            JSONObject post_params = new JSONObject();
+            post_params.put("user_id", user_id);
+            post_params.put("route_id", route_id);
+            post_params.put("event", event);
+            post_params.put("lon", location.getLongitude());
+            post_params.put("lat", location.getLatitude());
+            post_params.put("accuracy", location.getAccuracy());
+            post_params.put("speed", location.getSpeed());
+            //post_params.put("api-token", API_TOKEN);
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+            post_params.put("time", df.format(location.getTime()));
 
-            //When buffer is completed send it to platform
-            if(measures_count >= BUFFER_SIZE) {
-                postparams.put("medidas", array_measures);
-                String ambient = "";
-                if(currentRecording == BACKGROUND)
-                    ambient = "background";
-                else if (currentRecording == NEAR_FIELD)
-                    ambient = "near_field";
-                else if (currentRecording == FAR_FIELD)
-                    ambient = "far_field";
+            VolleyUtils.POST_JSON(this, API_POST_GPS, post_params, API_TOKEN, new VolleyUtils.VolleyJsonResponseListener() {
+                @Override
+                public void onError(String message) {
+                    Log.e("API", "No se puedo insertar en la plataforma, error: " + message);
+                }
 
-                //reset buffer variables
-                array_measures = new JSONArray();
-                measures_count = 0;
-
-
-                VolleyUtils.POST_JSON(this, API_ENDPOINT_2+ambient, postparams, new VolleyUtils.VolleyJsonResponseListener() {
-                    @Override
-                    public void onError(String message) {
-                        Log.d("API", "No se puedo insertar en la plataforma, error: " +message);
-                        forceConnectionToMobile(getApplicationContext());
+                @Override
+                public void onResponse(JSONObject response) {
+                    try {
+                        Log.d("API", "Subido a la plataforma: " + response.toString());
+                        Toast.makeText(com.itene.scalibur.MainActivity.this, "Uploaded " + response.toString(), Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        e.printStackTrace();
                     }
-
-                    @Override
-                    public void onResponse(JSONObject response) {
-                        try {
-                            Log.d("API", "Subido a la plataforma: " + response.getString("response"));
-                            //int dato_id = Integer.parseInt(response.getString("response"));
-                            tv_status.setText(String.format(Locale.getDefault(),"Subidos %d datos", BUFFER_SIZE));
-                        } catch (JSONException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                });
-            } else {
-                measures_count++;
-                array_measures.put(data);
-            }
-
+                }
+            });
         } catch (JSONException e) {
             e.printStackTrace();
         }
-    }*/
+    }
+
+    private void getRouteToDrive(int route_id) {
+        try {
+            VolleyUtils.GET_JSON_ARRAY(this, API_GET_ROUTE_DRIVE + route_id, API_TOKEN, new VolleyUtils.VolleyJsonArrayResponseListener() {
+                @Override
+                public void onError(String message) {
+                    Log.e("API", "No se puedo leer en la plataforma, error: " + message);
+                    stretchList = null;
+                }
+
+                @Override
+                public void onResponse(JSONArray response) {
+                    try {
+                        Log.d("API", "Ruta " + route_id + " leída con éxito");
+                        Toast.makeText(com.itene.scalibur.MainActivity.this, "Route " + route_id + " loaded successfully", Toast.LENGTH_SHORT).show();
+                        stretchList = new ArrayList<Stretch>();
+                        for (int i = 0; i < response.length(); i++)
+                        {
+                            JSONArray route = response.getJSONArray(i);
+                            for (int j = 0; j < route.length(); j++) {
+                                JSONObject stretch = route.getJSONObject(j);
+                                stretchList.add(new Stretch(stretch.getString("from_name"), stretch.getString("to_name"), stretch.getDouble("time"), stretch.getDouble("distance" )));
+                            }
+                        }
+
+                        mAdapter = new StretchListAdapter(stretchList, new StretchListAdapter.CustomItemClickListener() {
+                            @Override
+                            public void onItemClick(View v, int position) {
+                                Toast.makeText(com.itene.scalibur.MainActivity.this, "Stretch clicked!", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
+                        recyclerView.setLayoutManager(mLayoutManager);
+                        recyclerView.setItemAnimator(new DefaultItemAnimator());
+                        recyclerView.setAdapter(mAdapter);
+
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 }

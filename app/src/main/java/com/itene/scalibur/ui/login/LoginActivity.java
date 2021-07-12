@@ -25,6 +25,7 @@ import android.widget.Toast;
 
 import com.itene.scalibur.MainActivity;
 import com.itene.scalibur.R;
+import com.itene.scalibur.SelectRouteActivity;
 import com.itene.scalibur.ui.login.LoginViewModel;
 import com.itene.scalibur.ui.login.LoginViewModelFactory;
 
@@ -72,7 +73,7 @@ public class LoginActivity extends AppCompatActivity {
                 }
                 if (loginResult.getSuccess() != null) {
                     updateUiWithUser(loginResult.getSuccess());
-                    Intent myIntent = new Intent(LoginActivity.this, MainActivity.class);
+                    Intent myIntent = new Intent(LoginActivity.this, SelectRouteActivity.class);
                     //myIntent.putExtra("key", value); //Optional parameters
                     startActivity(myIntent);
                 }
