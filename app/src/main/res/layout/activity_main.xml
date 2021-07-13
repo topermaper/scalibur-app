@@ -26,17 +26,18 @@
     android:orientation="vertical"
     tools:context="com.itene.scalibur.MainActivity">
 
+
     <Button
         android:id="@+id/request_location_updates_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/request_location_updates" />
+        android:text="@string/start_route" />
 
     <Button
         android:id="@+id/remove_location_updates_button"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/remove_location_updates" />
+        android:text="@string/finish_route" />
 
     <RelativeLayout
         android:layout_width="match_parent"

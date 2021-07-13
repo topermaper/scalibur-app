@@ -25,14 +25,14 @@ public class StretchListAdapter extends RecyclerView.Adapter<StretchListAdapter.
     private CustomItemClickListener listener;
 
     public class MyViewHolder extends RecyclerView.ViewHolder{
-        public TextView rv_from, rv_to, rv_estimated;
+        public TextView rv_title, rv_from, rv_to, rv_estimated;
         public RelativeLayout viewBackground;
         public LinearLayout viewForeground;
         //public ImageView rv_color;
 
         public MyViewHolder(View view) {
             super(view);
-            //rv_color = (ImageView) view.findViewById(R.id.mr_color);
+            rv_title = (TextView) view.findViewById(R.id.title_row);
             rv_from = (TextView) view.findViewById(R.id.from_row);
             rv_to = (TextView) view.findViewById(R.id.to_row);
             rv_estimated = (TextView) view.findViewById(R.id.estimated_row);
@@ -69,6 +69,7 @@ public class StretchListAdapter extends RecyclerView.Adapter<StretchListAdapter.
     @Override
     public void onBindViewHolder(MyViewHolder holder, int position) {
         Stretch stretch = stretchList.get(position);
+        holder.rv_title.setText(String.format("Stretch #%d", position + 1));
         holder.rv_from.setText(String.format("From: %s", stretch.getFrom_name()));
         holder.rv_to.setText(String.format("To: %s", stretch.getTo_name()));
         holder.rv_estimated.setText(String.format("Estimated(%.0f s, %.0f m)", stretch.getTime(), stretch.getDistance()));

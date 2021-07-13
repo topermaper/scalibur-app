@@ -4,12 +4,21 @@ public class Stretch {
 
     private int from;
     private int to;
-    private String to_name;
     private String from_name;
+    private String to_name;
     private double time;
     private double distance;
 
     public Stretch() {}
+
+    public Stretch(int from, int to, String from_name, String to_name, double time, double distance) {
+        this.from = from;
+        this.to = to;
+        this.to_name = to_name;
+        this.from_name = from_name;
+        this.time = time;
+        this.distance = distance;
+    }
 
     public Stretch(String from_name, String to_name, double time, double distance) {
         this.from_name = from_name;

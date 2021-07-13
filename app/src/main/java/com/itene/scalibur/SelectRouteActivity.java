@@ -110,7 +110,7 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
                 public void onResponse(JSONArray response) {
                     try {
                         Log.d("API", "Rutas confirmadas de Kozani");
-                        Toast.makeText(com.itene.scalibur.SelectRouteActivity.this, "Rutas confirmadas de Kozani", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(com.itene.scalibur.SelectRouteActivity.this, "Rutas confirmadas de Kozani", Toast.LENGTH_SHORT).show();
                         List <Route> mRouteList = new ArrayList<Route>();
                         for (int i = 0; i < response.length(); i++)
                         {
@@ -142,7 +142,7 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
                 public void onResponse(JSONObject response) {
                     try {
                         Log.d("API", "Ruta iniciada");
-                        Toast.makeText(com.itene.scalibur.SelectRouteActivity.this, "Route started successfully", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(com.itene.scalibur.SelectRouteActivity.this, "Route started successfully", Toast.LENGTH_SHORT).show();
                         Intent myIntent = new Intent(SelectRouteActivity.this, MainActivity.class);
                         myIntent.putExtra("route_id", route_id); //Optional parameters
                         startActivity(myIntent);

@@ -13,6 +13,27 @@ import java.util.Date;
 public class Utils {
 
     public static final String KEY_REQUESTING_LOCATION_UPDATES = "requesting_location_updates";
+    public static final String KEY_ROUTE_ID = "request_route_id";
+
+    /**
+     * Returns true if requesting location updates, otherwise returns false.
+     *
+     * @param context The {@link Context}.
+     */
+    public static int requestingRouteId(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context).getInt(KEY_ROUTE_ID, 0);
+    }
+
+    /**
+     * Stores the location updates state in SharedPreferences.
+     * @param requestingRouteId The location updates state.
+     */
+    public static void setRequestingRouteId(Context context, int requestingRouteId) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putInt(KEY_ROUTE_ID, requestingRouteId)
+                .apply();
+    }
 
     /**
      * Returns true if requesting location updates, otherwise returns false.

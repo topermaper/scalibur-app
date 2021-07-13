@@ -20,6 +20,7 @@ import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
@@ -44,6 +45,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
@@ -63,6 +65,7 @@ import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -84,11 +87,14 @@ public class MainActivity extends AppCompatActivity implements
     // Tracks the bound state of the service.
     private boolean mBound = false;
 
+    // Variables
     private int route_id;
     List<Stretch> stretchList;
+    private boolean ending = false;
+    private Location last_location;
 
     // API endpoints
-    public final static String API_GET_CONFIRMED_ROUTES = "http://scalibur.itene.com/api/routes/Kozani/confirmed/list";
+    public final static String API_END_ROUTE = "http://scalibur.itene.com/api/routes/end/"; // Add <id> after
     public final static String API_GET_ROUTE_DRIVE = "http://scalibur.itene.com/api/routes/drive/"; // Add <id> after the url
     public final static String API_POST_GPS = "http://scalibur.itene.com/api/gps/";
     public final static String API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4ODQwNjk5MDgsImlhdCI6MTYyNDg2OTkwOCwic3ViIjoxfQ.TMo6udWhG8RvBcpMHjZZ-6z56_gK50yJvPrF2HFqkaU";
@@ -96,6 +102,7 @@ public class MainActivity extends AppCompatActivity implements
     // UI elements.
     private Button mRequestLocationUpdatesButton;
     private Button mRemoveLocationUpdatesButton;
+    private Button mFinishRouteButton;
     private StretchListAdapter mAdapter;
     private RecyclerView recyclerView;
 
@@ -139,13 +146,13 @@ public class MainActivity extends AppCompatActivity implements
         // Load current_route
         Intent intent = getIntent();
         route_id = intent.getIntExtra("route_id",0);
-        getRouteToDrive(route_id);
-
-        mRequestLocationUpdatesButton = (Button) findViewById(R.id.request_location_updates_button);
-        mRemoveLocationUpdatesButton = (Button) findViewById(R.id.remove_location_updates_button);
+        //getRouteToDrive(route_id);
 
         recyclerView = (RecyclerView) findViewById(R.id.routeList_view);
 
+
+        mRequestLocationUpdatesButton = (Button) findViewById(R.id.request_location_updates_button);
+        mRemoveLocationUpdatesButton = (Button) findViewById(R.id.remove_location_updates_button);
         mRequestLocationUpdatesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
@@ -163,7 +170,8 @@ public class MainActivity extends AppCompatActivity implements
         mRemoveLocationUpdatesButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                mService.removeLocationUpdates();
+                finish_route(route_id);
+                //mService.removeLocationUpdates();
             }
         });
 
@@ -181,11 +189,16 @@ public class MainActivity extends AppCompatActivity implements
         super.onResume();
         LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
                 new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
+        if (route_id == 0)
+            route_id = Utils.requestingRouteId(this);
+        getRouteToDrive(route_id);
     }
 
     @Override
     protected void onPause() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
+        if (!ending)
+            Utils.setRequestingRouteId(this, route_id);
         super.onPause();
     }
 
@@ -297,8 +310,8 @@ public class MainActivity extends AppCompatActivity implements
             if (location != null) {
                 //ToDO: Change call to obtain ids from previous calls
                 sendGPS(1, route_id, "GPS event", location);
-                Toast.makeText(com.itene.scalibur.MainActivity.this, Utils.getLocationText(location),
-                        Toast.LENGTH_SHORT).show();
+                last_location = location;
+                //Toast.makeText(com.itene.scalibur.MainActivity.this, Utils.getLocationText(location),Toast.LENGTH_SHORT).show();
             }
         }
     }
@@ -309,6 +322,9 @@ public class MainActivity extends AppCompatActivity implements
         if (s.equals(Utils.KEY_REQUESTING_LOCATION_UPDATES)) {
             setButtonsState(sharedPreferences.getBoolean(Utils.KEY_REQUESTING_LOCATION_UPDATES,
                     false));
+        }
+        if (s.equals(Utils.KEY_ROUTE_ID)) {
+            route_id = sharedPreferences.getInt(Utils.KEY_ROUTE_ID, 0);
         }
     }
 
@@ -335,18 +351,20 @@ public class MainActivity extends AppCompatActivity implements
             //post_params.put("api-token", API_TOKEN);
             SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             post_params.put("time", df.format(location.getTime()));
+            //post_params.put("time", df.format(new Date()));
+
 
             VolleyUtils.POST_JSON(this, API_POST_GPS, post_params, API_TOKEN, new VolleyUtils.VolleyJsonResponseListener() {
                 @Override
                 public void onError(String message) {
-                    Log.e("API", "No se puedo insertar en la plataforma, error: " + message);
+                    Log.e("API", "GPS can not connect with the platform, error: " + message);
                 }
 
                 @Override
                 public void onResponse(JSONObject response) {
                     try {
-                        Log.d("API", "Subido a la plataforma: " + response.toString());
-                        Toast.makeText(com.itene.scalibur.MainActivity.this, "Uploaded " + response.toString(), Toast.LENGTH_SHORT).show();
+                        Log.d("API", "GPS uploaded to the platform: " + response.toString());
+                        Toast.makeText(com.itene.scalibur.MainActivity.this, "Uploaded gps position", Toast.LENGTH_SHORT).show();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -370,21 +388,24 @@ public class MainActivity extends AppCompatActivity implements
                 public void onResponse(JSONArray response) {
                     try {
                         Log.d("API", "Ruta " + route_id + " leída con éxito");
-                        Toast.makeText(com.itene.scalibur.MainActivity.this, "Route " + route_id + " loaded successfully", Toast.LENGTH_SHORT).show();
+                        //Toast.makeText(com.itene.scalibur.MainActivity.this, "Route " + route_id + " loaded successfully", Toast.LENGTH_SHORT).show();
                         stretchList = new ArrayList<Stretch>();
                         for (int i = 0; i < response.length(); i++)
                         {
                             JSONArray route = response.getJSONArray(i);
                             for (int j = 0; j < route.length(); j++) {
                                 JSONObject stretch = route.getJSONObject(j);
-                                stretchList.add(new Stretch(stretch.getString("from_name"), stretch.getString("to_name"), stretch.getDouble("time"), stretch.getDouble("distance" )));
+                                stretchList.add(new Stretch(stretch.getInt("from"), stretch.getInt("to"),
+                                        stretch.getString("from_name"), stretch.getString("to_name"),
+                                        stretch.getDouble("time"), stretch.getDouble("distance" )));
                             }
                         }
 
                         mAdapter = new StretchListAdapter(stretchList, new StretchListAdapter.CustomItemClickListener() {
                             @Override
                             public void onItemClick(View v, int position) {
-                                Toast.makeText(com.itene.scalibur.MainActivity.this, "Stretch clicked!", Toast.LENGTH_SHORT).show();
+                                //Toast.makeText(com.itene.scalibur.MainActivity.this, "Stretch clicked!", Toast.LENGTH_SHORT).show();
+                                dialogRouteClicked(stretchList.get(position));
                             }
                         });
                         RecyclerView.LayoutManager mLayoutManager = new LinearLayoutManager(getApplicationContext());
@@ -392,6 +413,60 @@ public class MainActivity extends AppCompatActivity implements
                         recyclerView.setItemAnimator(new DefaultItemAnimator());
                         recyclerView.setAdapter(mAdapter);
 
+                    } catch (Exception e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void dialogRouteClicked(Stretch stretch){
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(MainActivity.this);
+        // set title
+        alertDialogBuilder.setTitle(getResources().getString(R.string.dialog_title_stretch));
+        // set dialog message
+        alertDialogBuilder
+                .setMessage(getResources().getString(R.string.dialog_confirm_stretch))
+                .setCancelable(false)
+                .setPositiveButton(getResources().getString(R.string.yes),new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,int id) {
+                        //send to platform
+                        sendGPS(1, route_id, "Container recover in location #" + stretch.getTo(), last_location);
+                    }
+                })
+                .setNegativeButton(getResources().getString(R.string.no),new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,int id) {
+                        // the dialog box and do nothing
+                        dialog.cancel();
+                    }
+                });
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+        // show it
+        alertDialog.show();
+    }
+    private void finish_route(int route_id) {
+        try {
+            VolleyUtils.GET_JSON(this, API_END_ROUTE + route_id , API_TOKEN, new VolleyUtils.VolleyJsonResponseListener() {
+                @Override
+                public void onError(String message) {
+                    Log.e("API", "Error message, error: " + message);
+                    Toast.makeText(com.itene.scalibur.MainActivity.this, "Error happened, cannot end the route rigth now", Toast.LENGTH_SHORT).show();
+
+                }
+
+                @Override
+                public void onResponse(JSONObject response) {
+                    try {
+                        Log.d("API", "Route ended");
+                        Toast.makeText(com.itene.scalibur.MainActivity.this, "Route ended successfully", Toast.LENGTH_SHORT).show();
+                        //stop sending GPS position
+                        ending = true;
+                        mService.removeLocationUpdates();
+                        finish();
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
