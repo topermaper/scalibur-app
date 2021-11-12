@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+xmlns:tools="http://schemas.android.com/tools"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+tools:context="com.itene.scalibur.RouteMapActivity" >
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/waypoint_rv"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:paddingTop="10dp"
+            android:paddingBottom="10dp"
+            android:layout_alignParentTop="true"/>
+
+        <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+            android:name="com.google.android.gms.maps.MapFragment"
+            android:id="@+id/map"
+            android:layout_below="@id/waypoint_rv"
+            android:layout_alignParentBottom="true"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"/>
+
+        <!--
+        <androidx.coordinatorlayout.widget.CoordinatorLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent">
+            <include layout="@layout/map_bottom_sheet" />
+        </androidx.coordinatorlayout.widget.CoordinatorLayout>
+        -->
+
+        <ImageView
+            android:id="@+id/recording"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/waypoint_rv"
+            android:layout_alignParentLeft="true"
+            android:visibility="invisible"
+            android:src="@drawable/satellite"
+            android:layout_margin="10dp" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_alignParentRight="true"
+            android:layout_margin="10dp"
+            android:layout_below="@id/waypoint_rv">
+        <ImageButton
+            android:id="@+id/get_directions_ib"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:visibility="visible"
+            android:src="@drawable/traffic_sign"
+            android:background="@drawable/map_button_round_corner"
+            android:padding="4dp"
+            android:layout_marginBottom="1dp"/>
+
+        <ImageButton
+            android:id="@+id/autocenter_ib"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentRight="true"
+            android:layout_below="@id/waypoint_rv"
+            android:visibility="gone"
+            android:src="@drawable/center_of_gravity"
+            android:background="@drawable/map_button_round_corner"
+            android:padding="4dp"
+            android:layout_marginTop="1dp"/>
+        </LinearLayout>
+
+    </RelativeLayout>
+
+</FrameLayout>

@@ -8,5 +8,6 @@
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
     <color name="scalibur_green">#73a237</color>
-    <color name="dark_green">#476125</color>
+    <color name="scalibur_dark_green">#1A7A09</color>
+    <color name="scalibur_very_dark_green">#05390A</color>
 </resources>

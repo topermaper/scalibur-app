@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+    <layer-list xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/splash_scalibur_logo">
+    <item
+        android:drawable="@drawable/bg_gradient"/>
+    <item
+
+        android:left="20dp"
+        android:right="20dp">
+        <bitmap
+            android:gravity="center|fill_horizontal"
+            android:src="@drawable/logo_scalibur_green"
+            />
+    </item>
+</layer-list>

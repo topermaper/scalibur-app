@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/route_card"
+    android:visibility="visible"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginVertical="@dimen/card_vertical_margin"
+    android:layout_marginHorizontal="@dimen/card_horizontal_margin"
+    app:cardCornerRadius="15dp">
+
+<RelativeLayout
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center_vertical"
+    android:orientation="vertical"
+    android:background="#CEDDCE">
+
+    <TextView
+        android:id="@+id/route_title"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Data from the route"
+        android:layout_marginBottom="5dp"
+        android:background="@color/scalibur_green"
+        android:textAppearance="@style/CardTittleText"
+        android:paddingLeft="@dimen/card_horizontal_padding"
+        android:paddingRight="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_slot"
+        android:layout_below="@id/route_title"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Day to recover:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+        android:paddingLeft="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_slot_result"
+        android:layout_below="@id/route_title"
+        android:layout_toEndOf="@id/route_slot"
+        android:gravity="end"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Undefined"
+        android:paddingRight="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_time"
+        android:layout_below="@id/route_slot"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Time cost:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+        android:paddingLeft="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_time_result"
+        android:layout_below="@id/route_slot"
+        android:layout_toEndOf="@id/route_time"
+        android:gravity="end"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Undefined"
+        android:paddingRight="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_distance"
+        android:layout_below="@id/route_time"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Distance cost:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+        android:paddingLeft="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_distance_result"
+        android:layout_below="@id/route_time"
+        android:layout_toEndOf="@id/route_distance"
+        android:gravity="end"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Undefined"
+        android:paddingRight="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_containers"
+        android:layout_below="@id/route_distance"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Containers to recover:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+        android:paddingLeft="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_containers_result"
+        android:layout_below="@id/route_distance"
+        android:layout_toEndOf="@id/route_containers"
+        android:gravity="end"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Undefined"
+        android:paddingRight="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_pilot"
+        android:layout_below="@id/route_containers"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Pilot:"
+        android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+        android:paddingLeft="@dimen/card_horizontal_padding" />
+    <TextView
+        android:id="@+id/route_pilot_result"
+        android:layout_below="@id/route_containers"
+        android:layout_toEndOf="@id/route_pilot"
+        android:gravity="end"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Undefined"
+        android:paddingRight="@dimen/card_horizontal_padding" />
+
+
+</RelativeLayout>
+
+
+</androidx.cardview.widget.CardView>

@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+
+<androidx.cardview.widget.CardView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/route_card"
+    android:visibility="visible"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <ImageView
+            android:id="@+id/previous"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/previous"
+            android:layout_alignParentLeft="true"
+            android:layout_centerVertical="true"/>
+
+        <LinearLayout
+            android:id="@+id/waypoint_ll"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_toRightOf="@+id/previous"
+            android:layout_toLeftOf="@+id/next"
+            android:orientation="vertical"
+            android:gravity="center_horizontal">
+
+            <TextView
+                android:id="@+id/next_tv"
+                android:visibility="invisible"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.AppCompat.Menu"
+                android:text="Next:" />
+
+            <TextView
+                android:id="@+id/waypoint_name"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Data from the route"
+                android:layout_margin="4dp"/>
+
+            <LinearLayout
+                android:id="@+id/metrics_ll"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_horizontal">
+                <TextView
+                    android:id="@+id/distance_lbl_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Distance:"
+                    android:layout_margin="4dp"/>
+                <TextView
+                    android:id="@+id/distance_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="12m"
+                    android:layout_margin="4dp"/>
+                <TextView
+                    android:id="@+id/time_lbl_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Duration:"
+                    android:layout_margin="4dp"/>
+                <TextView
+                    android:id="@+id/duration_tv"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="234s"
+                    android:layout_margin="5dp"/>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/pick_container_btn"
+                android:layout_width="wrap_content"
+                android:layout_height="40dp"
+                android:text="Pick container"
+                android:visibility="gone" />
+
+        </LinearLayout>
+
+        <ImageView
+            android:id="@+id/next"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/next"
+            android:layout_alignParentRight="true"
+            android:layout_centerVertical="true"/>
+    </RelativeLayout>
+
+</androidx.cardview.widget.CardView>

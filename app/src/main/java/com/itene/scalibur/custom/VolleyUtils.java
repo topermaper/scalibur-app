@@ -59,7 +59,9 @@ public class VolleyUtils {
                 public Map<String, String> getHeaders() throws AuthFailureError {
                     Map<String, String> headers = new HashMap<String, String>();
                     headers.put("Content-Type", "application/json; charset=UTF-8");
-                    headers.put("api-token", ACCESS_TOKEN);
+                    if (ACCESS_TOKEN != null) {
+                        headers.put("api-token", ACCESS_TOKEN);
+                    }
                     return headers;
                 }
         };
@@ -93,7 +95,9 @@ public class VolleyUtils {
                 public Map<String, String> getHeaders() throws AuthFailureError {
                     Map<String, String> headers = new HashMap<String, String>();
                     headers.put("Content-Type", "application/json; charset=UTF-8");
-                    headers.put("api-token", ACCESS_TOKEN);
+                    if (ACCESS_TOKEN != null) {
+                        headers.put("api-token", ACCESS_TOKEN);
+                    }
                     return headers;
             }
         };
