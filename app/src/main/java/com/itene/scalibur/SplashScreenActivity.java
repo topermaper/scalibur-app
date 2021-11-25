@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.Handler;
 import android.util.Log;
 import android.view.WindowManager;
 import android.view.animation.Animation;
@@ -22,58 +23,106 @@ import org.json.JSONObject;
 import java.util.concurrent.TimeUnit;
 
 public class SplashScreenActivity extends AppCompatActivity {
-    private long creation_ns;
 
-    private static final long MINIMUM_TIME = 2000000000L; //  2 seconds in nanoseconds
+    private static final int MINIMUM_TIME = 3000; // 3 seconds in milliseconds
     private static final String TAG = com.itene.scalibur.SplashScreenActivity.class.getSimpleName();
+    private boolean autoLoginInProgress;
+    private long creation_ns;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        creation_ns = System.nanoTime();
         super.onCreate(savedInstanceState);
+
+        Log.d(TAG, "onCreate");
+
+        creation_ns = System.nanoTime();
+        autoLoginInProgress = false;
+
         // This is used to hide the status bar and make
         // the splash screen as a full screen activity.
         getWindow().setFlags(
                 WindowManager.LayoutParams.FLAG_FULLSCREEN,
                 WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
-        // HERE WE ARE TAKING THE REFERENCE OF OUR IMAGE
-        // SO THAT WE CAN PERFORM ANIMATION USING THAT IMAGE
-        //ImageView logo = (ImageView)findViewById(R.id.splash_scalibur_logo);
-        //Animation slideAnimation = AnimationUtils.loadAnimation(this, R.anim.splash_animation);
-        //logo.startAnimation(slideAnimation);
-        autoLogin();
+
+        // Set activity layout
+        setContentView(R.layout.splash_screen);
+
+        // Start animation
+        ImageView logo = (ImageView)findViewById(R.id.splash_scalibur_logo);
+        Animation slideAnimation = AnimationUtils.loadAnimation(this, R.anim.splash_animation);
+        logo.startAnimation(slideAnimation);
     }
 
-    private void wait_a_bit() {
-        long ns_difference = System.nanoTime() - creation_ns;
+    @Override
+    public void onResume() {
+        super.onResume();
+        Log.d(TAG, "onResume");
+        autoLogin();        // Attempt autologin
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.d(TAG, "onSaveInstanceState");
+        outState.putBoolean("autoLoginInProgress", autoLoginInProgress);
+    }
+
+    @Override
+    protected void onRestoreInstanceState (Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        Log.d(TAG, "onRestoreInstanceState");
+        autoLoginInProgress = savedInstanceState.getBoolean("autoLoginInProgress", false);
+    }
+
+    private int calculate_waiting_time() {
+        int ns_difference = (int)((System.nanoTime() - creation_ns))/1000000;
         if (ns_difference < MINIMUM_TIME) {
-            try {
-                Log.d(TAG, String.format("Waiting %d milliseconds", (MINIMUM_TIME - ns_difference) / 1000000));
-                TimeUnit.NANOSECONDS.sleep(MINIMUM_TIME - ns_difference);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
+            return (MINIMUM_TIME - ns_difference);
+        } else {
+            return 0;
         }
     }
 
     private void startLoginActivity() {
         Log.d(TAG, "startLoginActivity");
-        wait_a_bit();
-        startActivity(new Intent(SplashScreenActivity.this, LoginActivity.class));
-        finish();
+        long waiting_time = calculate_waiting_time();
+        // we used the postDelayed(Runnable, time) method
+        // to send a message with a delayed time.
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                startActivity(new Intent(SplashScreenActivity.this, LoginActivity.class));
+                finish();
+            }
+        }, waiting_time); // 3000 is the delayed time in milliseconds.
     }
 
     private void startMainActivity(LoggedInUser user) {
         Log.d(TAG, "startMainActivity");
-        wait_a_bit();
-        Intent intent = new Intent(SplashScreenActivity.this, SelectRouteActivity.class);
-        intent.putExtra("user", user);
-        startActivity(intent);
-        finish();
+        long waiting_time = calculate_waiting_time();
+        // we used the postDelayed(Runnable, time) method
+        // to send a message with a delayed time.
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                Intent intent = new Intent(SplashScreenActivity.this, SelectRouteActivity.class);
+                intent.putExtra("user", user);
+                startActivity(intent);
+                finish();
+            }
+        }, waiting_time); // 3000 is the delayed time in milliseconds.
     }
 
     public void autoLogin() {
+        Log.d(TAG, "autoLogin");
+        if (autoLoginInProgress) {
+            Log.d(TAG, "autoLogin already launched, skipping");
+            return;
+        } else {
+            autoLoginInProgress = true;
+        }
+
         SharedPreferences sharedPreferences = this.getSharedPreferences(
                 "com.itene.scalibur", Context.MODE_PRIVATE);
         String api_token = sharedPreferences.getString("API_TOKEN", null);
@@ -112,5 +161,4 @@ public class SplashScreenActivity extends AppCompatActivity {
             startLoginActivity();
         }
     }
-
 }

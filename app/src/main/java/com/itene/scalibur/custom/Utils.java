@@ -1,29 +1,21 @@
-
-
 package com.itene.scalibur.custom;
 
-import com.google.android.gms.maps.model.BitmapDescriptor;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
+import com.google.android.gms.maps.model.Marker;
 import com.itene.scalibur.R;
 import com.itene.scalibur.config.Config;
-
 import android.content.Context;
 import android.graphics.Bitmap;
-import android.graphics.Canvas;
-import android.graphics.drawable.Drawable;
+import android.graphics.Matrix;
 import android.location.Location;
 import android.preference.PreferenceManager;
 import android.util.Log;
-
-import androidx.core.content.ContextCompat;
-
 import org.json.JSONException;
 import org.json.JSONObject;
-
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+
 
 public class Utils {
 
@@ -121,20 +113,21 @@ public class Utils {
         }
     }
 
-    public static BitmapDescriptor BitmapFromVector(Context context, int vectorResId) {
-        // below line is use to generate a drawable.
-        Drawable vectorDrawable = ContextCompat.getDrawable(context, vectorResId);
-        // below line is use to set bounds to our vector drawable.
-        vectorDrawable.setBounds(0, 0, vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight());
-        // below line is use to create a bitmap for our
-        // drawable which we have added.
-        Bitmap bitmap = Bitmap.createBitmap(vectorDrawable.getIntrinsicWidth(), vectorDrawable.getIntrinsicHeight(), Bitmap.Config.ARGB_8888);
-        // below line is use to add bitmap in our canvas.
-        Canvas canvas = new Canvas(bitmap);
-        // below line is use to draw our
-        // vector drawable in canvas.
-        vectorDrawable.draw(canvas);
-        // after generating our bitmap we are returning our bitmap.
-        return BitmapDescriptorFactory.fromBitmap(bitmap);
+    public static Bitmap rotateAndFlipTruckBitmap(Bitmap bitmap, float bearing){
+
+        float rotation;
+        float marker_orientation = 90;
+        Matrix matrix = new Matrix();
+
+        if (bearing >= 180) {
+            marker_orientation += 180;
+            matrix.postScale(-1, 1, bitmap.getWidth()/2, bitmap.getHeight()/2);
+        }
+
+        rotation = bearing - marker_orientation;
+        matrix.postRotate(rotation);
+
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        return rotatedBitmap;
     }
 }

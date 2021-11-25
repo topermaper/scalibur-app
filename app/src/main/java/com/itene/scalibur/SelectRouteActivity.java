@@ -159,7 +159,7 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
                         List <Route> mRouteList = new ArrayList<Route>();
                         for (int i = 0; i < response.length(); i++)
                         {
-                            mRouteList.add(new Route(getApplicationContext(), response.getJSONObject(i)));
+                            mRouteList.add(new Route(response.getJSONObject(i)));
                         }
 
                         RouteListAdapter adapter_route_card = new RouteListAdapter(mRouteList, SelectRouteActivity.this);

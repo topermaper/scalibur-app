@@ -1,16 +1,19 @@
 package com.itene.scalibur.models;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 import com.google.android.gms.maps.model.Polyline;
 
-public class DrivingPath {
+public class DrivingPath implements Parcelable {
 
     Polyline path_polyline;
-    Waypoint destination;
+    Integer destination_index;
     Double distance;
     Double duration;
 
-    DrivingPath(Waypoint destination) {
-        this.destination = destination;
+    DrivingPath(Integer index) {
+        this.destination_index = index;
     }
 
     public Polyline get_polyline() {
@@ -21,12 +24,12 @@ public class DrivingPath {
         this.path_polyline = path_polyline;
     }
 
-    public Waypoint getDestination() {
-        return destination;
+    public Integer getDestinationIndex() {
+        return destination_index;
     }
 
-    public void setDestination(Waypoint destination) {
-        this.destination = destination;
+    public void setDestinationIndex(Integer index) {
+        this.destination_index = index;
     }
 
     public Double getDistance() {
@@ -84,4 +87,36 @@ public class DrivingPath {
 
         return pretty_duration;
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        //dest.writeParcelable(this.path_polyline, flags);
+        dest.writeValue(this.destination_index);
+        dest.writeValue(this.distance);
+        dest.writeValue(this.duration);
+    }
+
+    protected DrivingPath(Parcel in) {
+        //this.path_polyline = in.readParcelable(Polyline.class.getClassLoader());
+        this.destination_index = (Integer)in.readValue(Integer.class.getClassLoader());
+        this.distance = (Double) in.readValue(Double.class.getClassLoader());
+        this.duration = (Double) in.readValue(Double.class.getClassLoader());
+    }
+
+    public static final Parcelable.Creator<DrivingPath> CREATOR = new Parcelable.Creator<DrivingPath>() {
+        @Override
+        public DrivingPath createFromParcel(Parcel source) {
+            return new DrivingPath(source);
+        }
+
+        @Override
+        public DrivingPath[] newArray(int size) {
+            return new DrivingPath[size];
+        }
+    };
 }

@@ -10,4 +10,14 @@
     <color name="scalibur_green">#73a237</color>
     <color name="scalibur_dark_green">#1A7A09</color>
     <color name="scalibur_very_dark_green">#05390A</color>
+    <color name="red">#FF0000</color>
+    <color name="dark_red">#910000</color>
+    <color name="light_red">#FF5656</color>
+    <color name="light_blue">#5C7FFF</color>
+    <color name="dark_blue">#00126C</color>
+    <color name="blue">#001AFF</color>
+    <color name="light_yellow">#FFFC85</color>
+    <color name="dark_yellow">#858E00</color>
+    <color name="yellow">#C9CF00</color>
+
 </resources>

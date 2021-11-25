@@ -18,10 +18,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.IBinder;
-import android.preference.PreferenceManager;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -32,11 +33,11 @@ import android.view.animation.LinearInterpolator;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.Toast;
-
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
@@ -54,18 +55,14 @@ import com.itene.scalibur.models.DrivingPath;
 import com.itene.scalibur.models.Route;
 import com.itene.scalibur.models.Location;
 import com.itene.scalibur.models.Waypoint;
-import com.itene.scalibur.ui.login.LoginActivity;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Locale;
 import android.content.SharedPreferences;
 
-import static com.itene.scalibur.custom.Utils.BitmapFromVector;
+//import static com.itene.scalibur.custom.Utils.BitmapFromVector;
 
 public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnCameraMoveStartedListener, OnMapReadyCallback {
     // Used in checking for runtime permissions.
@@ -78,11 +75,12 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
     private ImageButton get_directions_iv;
     private ImageButton autocenter_ib;
     private Route route;
+    private Integer route_id;
     private LoggedInUser user;
     private Animation recording_animation;
     private LinearLayoutManager lManager;
     private RecyclerView waypoint_rv;
-    private Boolean auto_center_cam;
+    //private Boolean auto_center_cam;
     private RouteMapActivity.MyReceiver myReceiver; // The BroadcastReceiver used to listen from broadcasts from the service.
     private LocationUpdatesService mService = null; // A reference to the service used to get location updates.
     private boolean mBound = false;    // Tracks the bound state of the service.
@@ -93,13 +91,25 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
 
         @Override
         public void onServiceConnected(ComponentName name, IBinder service) {
+            Log.d(TAG, "onServiceConnected");
             LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
             mService = binder.getService();
             mBound = true;
+
+            // This starts location updates inmediately for running routes
+            if (route.getStatus().equals(Route.StatusEnum.RUNNING) && !route.isPaused()) {
+                Log.d(TAG, "onServiceConnected - requestLocationUpdates");
+                mService.requestLocationUpdates();
+            } else {
+                Log.d(TAG, "onServiceConnected - removeLocationUpdates");
+                mService.removeLocationUpdates();
+            }
+
         }
 
         @Override
         public void onServiceDisconnected(ComponentName name) {
+            Log.d(TAG, "onServiceDisconnected");
             mService = null;
             mBound = false;
         }
@@ -111,7 +121,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         Log.d("API", "onCreate");
         super.onCreate(savedInstanceState);
 
-        route = new Route(getApplicationContext(), getIntent().getExtras().getInt("route_id"));
+        route = getIntent().getParcelableExtra("route");
         user = getIntent().getParcelableExtra("user");
 
         sharedPreferences = this.getSharedPreferences(
@@ -120,7 +130,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         // Set US locale, converts doubles to string using dot
         Locale.setDefault(Locale.US);
 
-        auto_center_cam=true;
+        //auto_center_cam=true;
 
         setContentView(R.layout.route_map);
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
@@ -148,16 +158,27 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         SnapHelper snapHelper = new PagerSnapHelper();
         snapHelper.attachToRecyclerView(waypoint_rv);
 
+        // Set waypoint recycler view adapter
+        WaypointListAdapter waypoint_adapter = new WaypointListAdapter(route, RouteMapActivity.this);
+        waypoint_rv.setAdapter(waypoint_adapter);
+
         recording_animation = new AlphaAnimation(0, 1); //to change visibility from invisible to visible
 
-        // Set Listeners
+        // addOnScrollListener is called when recycler view is scrolled manually by the user
+        // not called when calling setCurrentItem
         waypoint_rv.addOnScrollListener(new RecyclerView.OnScrollListener() {
             @Override
             public void onScrollStateChanged(RecyclerView recyclerView, int newState) {
                 super.onScrollStateChanged(recyclerView, newState);
+                Log.d(TAG, String.format("addOnScrollListener newState=%d", newState));
                 if (newState == RecyclerView.SCROLL_STATE_IDLE){
                     int position = getCurrentItem();
-                    onWaypointRVChange(position);
+                    Marker marker = route.getWaypoints().get(position).getMarker();
+                    marker.showInfoWindow();
+                    mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()), 250, null);
+                    route.setAutoCenter(false);
+                    autocenter_ib.setVisibility(View.VISIBLE);
+                    waypoint_rv.getAdapter().notifyDataSetChanged();
                 }
             }
         });
@@ -180,11 +201,16 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         autocenter_ib.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Location location = route.getLast_known_location();
-                auto_center_cam = true;
-                mMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
+                route.setAutoCenter(true);
                 autocenter_ib.setVisibility(View.GONE);
+                mMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
+                setCurrentItem(route.getWaypoints().indexOf(route.getCurrentDestination()), false);
+                // Notify adapter data has change so it redraws
+                waypoint_rv.getAdapter().notifyDataSetChanged();
             }
         });
+
+        updateRoute(null);
     }
 
     @Override
@@ -231,6 +257,24 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         super.onDestroy();
     }
 
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        Log.d(TAG, "onSaveInstanceState");
+
+        // Save route
+        outState.putParcelable("route",  route);
+    }
+
+    @Override
+    protected void onRestoreInstanceState (Bundle savedInstanceState) {
+        super.onRestoreInstanceState(savedInstanceState);
+        Log.d(TAG, "onRestoreInstanceState");
+        route = savedInstanceState.getParcelable("route");
+    }
+
+
     @Override
     protected void onResume() {
         Log.d(TAG, "onResume");
@@ -247,7 +291,6 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         super.onPause();
     }
 
-
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.route_map_menu, menu);
@@ -257,8 +300,8 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
     public void onUserMapCenterChange() {
         // User touched the map, don´t center the camera in the current position
         // Only during running status
-        if (route.getStatus() == Route.StatusEnum.RUNNING) {
-            auto_center_cam = false;
+        if (route.getStatus() == Route.StatusEnum.RUNNING && !route.isPaused()) {
+            route.setAutoCenter(false);
             autocenter_ib.setVisibility(View.VISIBLE);
         }
     }
@@ -305,12 +348,11 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
                 break;
             }
             case RUNNING: {
-                pause_route.setVisible(true);
-                finish_route.setVisible(true);
-                break;
-            }
-            case PAUSED: {
-                resume_route.setVisible(true);
+                if (route.isPaused()) {
+                    resume_route.setVisible(true);
+                } else {
+                    pause_route.setVisible(true);
+                }
                 finish_route.setVisible(true);
                 break;
             }
@@ -341,8 +383,6 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
             default:
                 return super.onOptionsItemSelected(item);
         }
-        // Forces waypoints to redraw
-        waypoint_rv.getAdapter().notifyDataSetChanged();
 
         return true;
     }
@@ -353,8 +393,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         if (mService != null) {
             mService.removeLocationUpdates();
             route.pauseRoute();
-            autocenter_ib.setVisibility(View.GONE);
-            auto_center_cam = true;
+            updateRoute(null);
         } else {
             Toast.makeText(com.itene.scalibur.RouteMapActivity.this, "Service is not available", Toast.LENGTH_SHORT).show();
         }
@@ -383,10 +422,8 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
                     public void onResponse(JSONObject response) {
                         Log.d("API:", String.format("Response: %s", response.toString()));
                         route.startRoute();
-                        autocenter_ib.setVisibility(View.VISIBLE); // Show autocenter button
-                        // Move recycler view to the new waypoint
-                        setCurrentItem(route.getWaypoints().indexOf(route.getCurrentDestination()), true);
                         mService.requestLocationUpdates();
+                        updateRoute(null);
                     }
                 });
             } catch (Exception e) {
@@ -435,8 +472,6 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
                     Toast.makeText(com.itene.scalibur.RouteMapActivity.this, "Could not start route. Can not connect to server.", Toast.LENGTH_SHORT).show();
                     e.printStackTrace();
                 }
-
-
             }
         });
 
@@ -458,11 +493,8 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
 
         if (mService != null) {
             route.resumeRoute();
-            auto_center_cam = true;
-            autocenter_ib.setVisibility(View.GONE); // Don´t show autocenter button
-            // Move recycler view to the new waypoint
-            setCurrentItem(route.getWaypoints().indexOf(route.getCurrentDestination()), true);
             mService.requestLocationUpdates();
+            updateRoute(null);
         } else {
             Toast.makeText(com.itene.scalibur.RouteMapActivity.this, "Service is not available", Toast.LENGTH_SHORT).show();
         }
@@ -481,15 +513,6 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         }
     }
     */
-
-    public void onWaypointRVChange(Integer position) {
-        Log.d(TAG, "onWaypointRVChange");
-        Marker marker = route.getWaypoints().get(position).getMarker();
-        marker.showInfoWindow();
-        mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()), 250, null);
-        onUserMapCenterChange();
-        waypoint_rv.getAdapter().notifyDataSetChanged();
-    }
 
     public boolean hasPrevious() {
         return getCurrentItem() > 0;
@@ -522,7 +545,12 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
                 .findFirstVisibleItemPosition();
     }
 
-    public void setCurrentItem(int position, boolean smooth){
+    public void setCurrentItem(int position, boolean smooth) {
+        try {
+            route.getWaypoints().get(position).getMarker().showInfoWindow();
+        } catch(Exception e){
+            Log.w(TAG, "Null marker. Can not show info window");
+        }
         if (smooth)
             waypoint_rv.smoothScrollToPosition(position);
         else
@@ -567,7 +595,11 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
             }
         });
 
-        loadRouteFromServer();
+        addMarkers(mMap, route);
+
+        // Move camera to the pilot center
+        LatLng pilot_latlng = new LatLng(route.getPilot().getLatitude(), route.getPilot().getLongitude());
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(pilot_latlng, route.getPilot().getZoom()));
     }
 
     /**
@@ -590,6 +622,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         }
     }
 
+    /*
     private void loadRouteFromServer() {
         try {
             String api_url = String.format("%s%d", Config.API_ROUTES, route.getId());
@@ -630,7 +663,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         } catch (Exception e) {
             e.printStackTrace();
         }
-    }
+    }*/
 
 
     private void blinkGpsLocationReceivedIcon() {
@@ -640,8 +673,6 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         recording_animation.setRepeatMode(Animation.REVERSE);
         recording_iv.startAnimation(recording_animation); //to start animation
     }
-
-
 
 
     /**
@@ -661,68 +692,98 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
     }
 
     private void updateRoute(android.location.Location location) {
-        // Add current position marker
-        // Remove last known location marker if exists
-        try {
-           route.getLast_known_location().getMarker().remove();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        if (location != null) {
+            LatLng current_position = new LatLng(location.getLatitude(), location.getLongitude());
 
-        LatLng current_position = new LatLng(location.getLatitude(), location.getLongitude());
-        Marker marker = mMap.addMarker(new MarkerOptions()
-                .position(current_position)
-                .anchor(0.5f,0.5f)
-                .icon(BitmapFromVector(getApplicationContext(), R.drawable.garbage_truck)));
+            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.garbage_truck);
+            bitmap = Utils.rotateAndFlipTruckBitmap(bitmap, location.getBearing());
 
-        route.setLast_known_location(new Location(location));
-        route.getLast_known_location().setMarker(marker);
-        if (auto_center_cam) {
-            mMap.animateCamera(CameraUpdateFactory.newLatLng(current_position));
+            try { // Remove last known location marker if exists
+                route.getLast_known_location().getMarker().remove();
+            } catch (Exception e) {
+                Log.w(TAG, "Can not remove last location marker. Null location or marker");
+            }
+
+            // Add current position truck marker
+            Marker marker = mMap.addMarker(new MarkerOptions()
+                    .position(current_position)
+                    .anchor(0.5f, 0.5f)
+                    .icon(BitmapDescriptorFactory.fromBitmap(bitmap)));
+
+            route.setLast_known_location(new Location(location));
+            route.getLast_known_location().setMarker(marker);
+
+            if (route.isAutoCentered()) {
+                mMap.animateCamera(CameraUpdateFactory.newLatLng(current_position));
+            }
         }
         // ************************************************************
 
-        Location next_waypoint = route.getCurrentDestination();
-
-        if (next_waypoint == null) {
-            return;
+        // Remove truck icon when not running
+        if (!route.getStatus().equals(Route.StatusEnum.RUNNING) || route.isPaused()) {
+            try { // Remove last known location marker if exists
+                route.getLast_known_location().getMarker().remove();
+            } catch (Exception e) {
+                Log.w(TAG, "Can not remove last location marker. Null location or marker");
+            }
         }
 
-        String current_waypoint_str = String.format("%s,%s", location.getLongitude(), location.getLatitude());
-        String next_waypoint_str = String.format("%s,%s", next_waypoint.getLongitude(), next_waypoint.getLatitude());
-        String url = String.format( "%s%s;%s?overview=full", RoutingMachine.ROUTE_URL, current_waypoint_str, next_waypoint_str);
-
-        VolleyUtils.GET_JSON(this, url, null, new VolleyUtils.VolleyJsonResponseListener() {
-            @Override
-            public void onError(String message) {
-                Log.e("RoutingMachine", "Can not connect with routing machine: " + message);
+        if (route.isAutoCentered()) {
+            autocenter_ib.setVisibility(View.GONE);
+            Integer next_wp_index = route.getWaypoints().indexOf(route.getCurrentDestination());
+            if (getCurrentItem() != next_wp_index) {
+                // Move recycler view to the new waypoint
+                setCurrentItem(next_wp_index, false);
             }
+        } else {
+            autocenter_ib.setVisibility(View.VISIBLE);
+        }
 
-            @Override
-            public void onResponse(JSONObject response) {
-                // Remove current polyline so we can draw a new one
-                DrivingPath current_path = route.getCurrent_path();
-                current_path.reset();
+        // We are asking the route machine for a solution so we need location and next waypoint to be not null
+        // and the route to be in "Running" status and not paused
+        Location next_waypoint = route.getCurrentDestination();
+        if (location != null && next_waypoint != null &&  !route.isPaused() && route.getStatus().equals(Route.StatusEnum.RUNNING)) {
+            String current_waypoint_str = String.format("%s,%s", location.getLongitude(), location.getLatitude());
+            String next_waypoint_str = String.format("%s,%s", next_waypoint.getLongitude(), next_waypoint.getLatitude());
+            String url = String.format(Config.API_RM_DRIVING, String.format("%s;%s",current_waypoint_str, next_waypoint_str));
 
-                try {
-                    Log.d("RoutingMachine", "Received solution from routing platform: " + response.toString());
-                    JSONArray routes = response.getJSONArray("routes");
-
-                    String geometry = routes.getJSONObject(0).getString("geometry");
-                    Polyline polyline = mMap.addPolyline(new PolylineOptions()
-                            .clickable(true).addAll(PolyUtil.decode(geometry)));
-
-                    current_path.setPolyline(polyline);
-                    current_path.setDistance(routes.getJSONObject(0).getDouble("distance"));
-                    current_path.setDuration(routes.getJSONObject(0).getDouble("duration"));
-                } catch (JSONException e) {
-                    e.printStackTrace();
+            VolleyUtils.GET_JSON(this, url, null, new VolleyUtils.VolleyJsonResponseListener() {
+                @Override
+                public void onError(String message) {
+                    Toast.makeText(com.itene.scalibur.RouteMapActivity.this, "Can not connect with routing machine", Toast.LENGTH_SHORT).show();
+                    Log.e("RoutingMachine", "Can not connect with routing machine: " + message);
                 }
 
-                // Notify adapter data has change so it redraws
-                waypoint_rv.getAdapter().notifyDataSetChanged();
-            }
-        });
+                @Override
+                public void onResponse(JSONObject response) {
+
+                    try {
+                        Log.d("RoutingMachine", "Received solution from routing platform: " + response.toString());
+                        JSONArray routes = response.getJSONArray("routes");
+                        String geometry = routes.getJSONObject(0).getString("geometry");
+
+                        // Remove current polyline so we can draw a new one
+                        DrivingPath current_path = route.getCurrent_path();
+                        current_path.reset();
+
+                        //Draw new polyline
+                        Polyline polyline = mMap.addPolyline(new PolylineOptions()
+                                .clickable(true).addAll(PolyUtil.decode(geometry)));
+
+                        current_path.setPolyline(polyline);
+                        current_path.setDistance(routes.getJSONObject(0).getDouble("distance"));
+                        current_path.setDuration(routes.getJSONObject(0).getDouble("duration"));
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+
+                    // Notify adapter data has change so it redraws
+                    waypoint_rv.getAdapter().notifyDataSetChanged();
+                }
+            });
+        }
+        // Notify adapter data has change so it redraws
+        waypoint_rv.getAdapter().notifyDataSetChanged();
     }
     /**
      * Returns the current state of the permissions needed.

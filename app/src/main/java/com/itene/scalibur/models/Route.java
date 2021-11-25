@@ -1,6 +1,9 @@
 package com.itene.scalibur.models;
 
 import android.content.Context;
+import android.os.Parcel;
+import android.os.Parcelable;
+import android.util.Log;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -13,7 +16,7 @@ import org.jetbrains.annotations.NotNull;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-public class Route {
+public class Route implements Parcelable {
 
     private int id;
     private StatusEnum status;
@@ -30,26 +33,18 @@ public class Route {
     private DrivingPath current_path;
     private Waypoint start_depot;
     private Waypoint end_depot;
-    private Context context;
+    private boolean paused;
+    private boolean auto_center;
 
     public enum StatusEnum
     {
-        READY, RUNNING, PAUSED, FINISHED
+        READY, RUNNING, FINISHED
     }
 
-    public Route(Context context) {
-        this.context = context;
-        //this.driving_status = StatusEnum.READY;
-    }
-
-    public Route(Context context, Integer route_id) {
-        this(context);
-        this.id = route_id;
-    }
-
-    public Route(Context context, JSONObject json) {
-        this(context);
+    public Route(JSONObject json) {
         this.populate(json);
+        this.paused = false;
+        this.auto_center = true;
     }
 
     public void populate(JSONObject json) {
@@ -65,13 +60,12 @@ public class Route {
             this.created_at = Calendar.getInstance();
             SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ", Locale.getDefault()); //2021-11-03T08:16:02.323025+00:00
             this.created_at.setTime(Objects.requireNonNull(sdf.parse(json.getString("created_at"))));
-            this.current_path = null;
             this.waypoints = new ArrayList<Waypoint>();
 
             if (json.has("waypoints")) {
                 // Create waypoints
                 for (int i = 0; i < json.getJSONArray("waypoints").length(); i++) {
-                    Waypoint waypoint = new Waypoint(context, json.getJSONArray("waypoints").getJSONObject(i));
+                    Waypoint waypoint = new Waypoint(json.getJSONArray("waypoints").getJSONObject(i));
                     this.waypoints.add(waypoint);
 
                     switch (waypoint.getLocation_type()) {
@@ -94,6 +88,12 @@ public class Route {
                 }
 
             }
+            if (status.equals(StatusEnum.RUNNING) && !paused) {
+                calculateNextDestination(); // sets current path
+            } else {
+                current_path = null;
+            }
+
         } catch (JSONException | ParseException e) {
             e.printStackTrace();
         }
@@ -105,6 +105,18 @@ public class Route {
 
     public void setId(int id) {
         this.id = id;
+    }
+
+    public boolean isAutoCentered() {
+        return auto_center;
+    }
+
+    public void setAutoCenter(Boolean auto_center) {
+        this.auto_center = auto_center;
+    }
+
+    public boolean isPaused() {
+        return paused;
     }
 
     public int getN_containers() {
@@ -159,24 +171,26 @@ public class Route {
     }
 
     public void startRoute() {
+        paused = false;
         status = StatusEnum.RUNNING;
-        toNextDestination();
+        calculateNextDestination();
         //current_path = new DrivingPath(getCurrentDestination());
     }
 
     public void pauseRoute() {
-        status = StatusEnum.PAUSED;
+        paused = true;
+        status = StatusEnum.RUNNING;
         if (current_path != null) {
             current_path.reset();
-            current_path.getDestination().setNext(false);
+            waypoints.get(current_path.getDestinationIndex()).setNext(false);
             current_path = null;
         }
-
     }
 
     public void resumeRoute() {
+        paused = false;
         status = StatusEnum.RUNNING;
-        toNextDestination();
+        calculateNextDestination();
     }
 
     public void finishRoute() {
@@ -187,29 +201,49 @@ public class Route {
         if (current_path == null) {
             return null;
         }
-        return current_path.getDestination();
+        return waypoints.get(current_path.getDestinationIndex());
     }
 
     public void pick_container(@NotNull Waypoint waypoint) {
         // Pick up next container
-        if (waypoint.canBePicked()) {
+        if (waypoint.couldBePicked()) {
             waypoint.pick();
         }
 
-        toNextDestination(); // Move to next destination
+        calculateNextDestination(); // Move to next destination
     }
 
-    public void toNextDestination() {
+    public void skip_container(@NotNull Waypoint waypoint) {
+        // Skip container if it is pickable
+        if (waypoint.couldBePicked()) {
+            waypoint.skip();
+        }
+        // If we are skipping current destination then we have to recalculate next destination
+        if (getCurrentDestination() == waypoint) {
+            calculateNextDestination();
+        }
+    }
+
+    public void undo_container(@NotNull Waypoint waypoint) {
+        // Skip container
+        if (waypoint.isPicked() || waypoint.isSkipped()) {
+            waypoint.undo_status();
+        }
+
+        calculateNextDestination(); // Move to next destination
+    }
+
+
+    // This method calculates the next waypoint based on the waypoint status
+    // it should do nothing if waypoint status is not updated first
+    // This should be kept private, use methods pick_container, skip_container and undo_container
+    private void calculateNextDestination() {
         Waypoint next_wp = null;
         Waypoint previous_wp = null;
 
-        if (current_path != null) {
-            previous_wp = current_path.getDestination();
-        }
-
         // Find a pickable waypoint which has not been picked up yet
         for (int i = 0; i < waypoints.size(); i++) {
-            if (( waypoints.get(i).canBePicked()) && !( waypoints.get(i).isPicked())) {
+            if (waypoints.get(i).couldBePicked()) {
                 next_wp = waypoints.get(i);
                 break;
             }
@@ -219,12 +253,23 @@ public class Route {
             next_wp = end_depot;
         }
 
-        current_path = new DrivingPath(next_wp);
+        if (current_path != null) {
+            previous_wp = waypoints.get(current_path.getDestinationIndex());
+        }
 
-        next_wp.setNext(true); // Set next property in next waypoint
+        if (next_wp != previous_wp) {
+            if (current_path != null) {
+                // if we are moving to next destination then drawn polyline is not longer valid
+                current_path.reset();
+            }
+            if (next_wp != null) {
+                current_path = new DrivingPath(waypoints.indexOf(next_wp));
+                next_wp.setNext(true); // Set next property in next waypoint
+            }
 
-        if (previous_wp != null) {
-            previous_wp.setNext(false); // Set next property in previous waypoint
+            if (previous_wp != null) {
+                previous_wp.setNext(false); // Set next property in previous waypoint
+            }
         }
     }
 
@@ -233,4 +278,62 @@ public class Route {
     public String toString() {
         return "Route #" + this.id + " for " + this.slot;
     }
+
+    @Override
+    public int describeContents() {
+        return 0;
+    }
+
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeInt(this.id);
+        dest.writeInt(this.status == null ? -1 : this.status.ordinal());
+        dest.writeInt(this.n_containers);
+        dest.writeDouble(this.time_cost);
+        dest.writeDouble(this.distance_cost);
+        dest.writeParcelable(this.pilot, flags);
+        dest.writeString(this.optimize_by);
+        dest.writeString(this.slot);
+        dest.writeSerializable(this.created_at);
+        dest.writeList(this.waypoints);
+        dest.writeParcelable(this.last_known_location, flags);
+        dest.writeParcelable(this.current_path, flags);
+        dest.writeParcelable(this.start_depot, flags);
+        dest.writeParcelable(this.end_depot, flags);
+        dest.writeByte((byte) (paused ? 1 : 0));
+        dest.writeByte((byte) (auto_center ? 1 : 0));
+    }
+
+    protected Route(Parcel in) {
+        this.id = in.readInt();
+        int tmpStatus = in.readInt();
+        this.status = tmpStatus == -1 ? null : StatusEnum.values()[tmpStatus];
+        this.n_containers = in.readInt();
+        this.time_cost = in.readDouble();
+        this.distance_cost = in.readDouble();
+        this.pilot = in.readParcelable(Pilot.class.getClassLoader());
+        this.optimize_by = in.readString();
+        this.slot = in.readString();
+        this.created_at = (Calendar) in.readSerializable();
+        this.waypoints = new ArrayList<Waypoint>();
+        in.readList(this.waypoints, Waypoint.class.getClassLoader());
+        this.last_known_location = in.readParcelable(Location.class.getClassLoader());
+        this.current_path = in.readParcelable(DrivingPath.class.getClassLoader());
+        this.start_depot = in.readParcelable(Waypoint.class.getClassLoader());
+        this.end_depot = in.readParcelable(Waypoint.class.getClassLoader());
+        this.paused = in.readByte() != 0;
+        this.auto_center = in.readByte() != 0;
+    }
+
+    public static final Parcelable.Creator<Route> CREATOR = new Parcelable.Creator<Route>() {
+        @Override
+        public Route createFromParcel(Parcel source) {
+            return new Route(source);
+        }
+
+        @Override
+        public Route[] newArray(int size) {
+            return new Route[size];
+        }
+    };
 }

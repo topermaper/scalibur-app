@@ -3,22 +3,30 @@ package com.itene.scalibur.custom;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Parcelable;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 import androidx.recyclerview.widget.RecyclerView;
+
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.model.LatLng;
 import com.itene.scalibur.R;
 import com.itene.scalibur.RouteMapActivity;
 import com.itene.scalibur.SelectRouteActivity;
+import com.itene.scalibur.config.Config;
 import com.itene.scalibur.models.Route;
 
+
+import org.json.JSONObject;
 
 import java.util.List;
 
 public class RouteListAdapter extends RecyclerView.Adapter<RouteListAdapter.RouteListHolder> {
 
+    private static final String TAG = com.itene.scalibur.custom.RouteListAdapter.class.getSimpleName();
     List<Route> routes;
     SelectRouteActivity context;
 
@@ -47,13 +55,41 @@ public class RouteListAdapter extends RecyclerView.Adapter<RouteListAdapter.Rout
         holder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Toast.makeText(context, String.format("Route #%d", route.getId()), Toast.LENGTH_LONG).show();
-                Intent intent = new Intent(context, RouteMapActivity.class);
-                // Pass route id to the new activity
-                intent.putExtra("route_id", route.getId());
-                // Pass logged user
-                intent.putExtra("user", (Parcelable)context.getIntent().getParcelableExtra("user"));
-                context.startActivity(intent);
+                Log.d(TAG, String.format("Clicked on route #%d", route.getId()));
+
+                try {
+                    String api_url = String.format("%s%d", Config.API_ROUTES, route.getId());
+                    String api_token =  context.getSharedPreferences("com.itene.scalibur", Context.MODE_PRIVATE).getString("API_TOKEN", null);
+                    VolleyUtils.GET_JSON(context, api_url, api_token, new VolleyUtils.VolleyJsonResponseListener() {
+                        @Override
+                        public void onError(String message) {
+                            Log.e("API", "No se puede leer en la plataforma, error: " + message);
+                        }
+
+                        @Override
+                        public void onResponse(JSONObject response) {
+                            try {
+                                Log.d(TAG, response.toString());
+
+                                route.populate(response);
+
+                                Intent intent = new Intent(context, RouteMapActivity.class);
+                                // Pass populated route to the new activity
+                                intent.putExtra("route", route);
+
+                                // Pass logged user
+                                intent.putExtra("user", (Parcelable)context.getIntent().getParcelableExtra("user"));
+                                context.startActivity(intent);
+                            } catch (Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+
+
             }
         });
     }
