@@ -74,6 +74,10 @@ public class Waypoint extends Location {
         }
     }
 
+    public boolean isPickable() {
+        return location_type.equals("CONTAINER_SPOT");
+    }
+
     public void pick() {
         status = StatusEnum.PICKED;
         updateMarker();

@@ -8,9 +8,11 @@ import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
+import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 import com.itene.scalibur.R;
 import com.itene.scalibur.RouteMapActivity;
@@ -175,38 +177,43 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
         Waypoint waypoint = route.getWaypoints().get(position);
         DrivingPath path = route.getCurrent_path();
 
-        // Set gone by default
+        // Hide by default
         holder.pick_container_btn.setVisibility(View.GONE);
         holder.skip_container_btn.setVisibility(View.GONE);
         holder.undo_container_btn.setVisibility(View.GONE);
-        holder.next_tv.setVisibility(View.GONE);
-        holder.picked_tv.setVisibility(View.GONE);
-        holder.waiting_tv.setVisibility(View.GONE);
-        holder.skipped_tv.setVisibility(View.GONE);
-        holder.previous.setVisibility(View.GONE);
-        holder.next.setVisibility(View.GONE);
-        holder.metrics_ll.setVisibility(View.GONE);
+        holder.previous.setVisibility(View.INVISIBLE);
+        holder.next.setVisibility(View.INVISIBLE);
 
-        holder.waypointName.setText(waypoint.getPrettyName());
+        // Set location name
+        holder.card_title_tv.setText(waypoint.getPrettyName());
 
-        if (path != null) {
-                holder.distance_tv.setText(path.getPrettyDistance());
-                holder.duration_tv.setText(path.getPrettyDuration());
+        // If pickable, is not picked, and is not already skipped  then it can be skipped
+        if (waypoint.couldBePicked()) {
+            holder.skip_container_btn.setVisibility(View.VISIBLE);
         }
 
-        if (position > 0) { // It´s first element
+        // It´s first element
+        if (position == 0) {
+            holder.card_title_extra_tv.setText("Start");
+            holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.white));
+        } else {
             holder.previous.setVisibility(View.VISIBLE);
         }
 
-        // It´s not last element
-        if (position < route.getWaypoints().size() - 1) {
+        // It´s last element
+        if (position == route.getWaypoints().size() - 1) {
+            holder.card_title_extra_tv.setText("End");
+            holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.white));
+        } else {
             holder.next.setVisibility(View.VISIBLE);
         }
 
         // Drawing the current destination
         if (( route.getCurrentDestination() !=null ) && (route.getWaypoints().indexOf(route.getCurrentDestination()) == position )) {
-            holder.next_tv.setVisibility(View.VISIBLE);
-            holder.metrics_ll.setVisibility(View.VISIBLE);
+            if (path != null) {
+                holder.card_title_extra_tv.setText(String.format("Next: %s (%s)", path.getPrettyDistance(), path.getPrettyDuration()));
+            }
+            holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_red));
             if (route.getCurrentDestination().couldBePicked()) {
                 holder.pick_container_btn.setVisibility(View.VISIBLE);
             }
@@ -214,22 +221,20 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
         } else {
             // Item is picked
             if (waypoint.isPicked()) {
-                holder.picked_tv.setVisibility(View.VISIBLE);
+                holder.card_title_extra_tv.setText("Picked");
+                holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_blue));
                 holder.undo_container_btn.setVisibility(View.VISIBLE);
             } else if (waypoint.isSkipped()) {
-                holder.skipped_tv.setVisibility(View.VISIBLE);
+                holder.card_title_extra_tv.setText("Skipped");
+                holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_yellow));
                 holder.undo_container_btn.setVisibility(View.VISIBLE);
-            } else if (route.getCurrentDestination() != null) {
-                Integer stops = position - route.getWaypoints().indexOf(route.getCurrentDestination());
+            } else if (waypoint.isPickable() && route.getCurrentDestination() != null) {
+                Integer stops = route.stopsLeftToWaypoint(waypoint);
                 if (stops > 0) {
-                    holder.waiting_tv.setText(String.format("%d stop(s) left", stops));
-                    holder.waiting_tv.setVisibility(View.VISIBLE);
+                    holder.card_title_extra_tv.setText(String.format("%s stop(s) left", stops));
+                    holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_green));
                 }
             }
-        }
-        // If pickable, is not picked, and is not already skipped  then it can be skipped
-        if (waypoint.couldBePicked()) {
-            holder.skip_container_btn.setVisibility(View.VISIBLE);
         }
     }
 
@@ -244,32 +249,24 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
     }
 
     public static class WaypointListHolder extends RecyclerView.ViewHolder {
-        TextView waypointName;
+
+        TextView card_title_tv;
+        TextView card_title_extra_tv;
         ImageView previous;
         ImageView next;
-        TextView next_tv;
-        TextView picked_tv;
-        TextView waiting_tv;
-        TextView skipped_tv;
         LinearLayout metrics_ll;
-        TextView distance_tv;
-        TextView duration_tv;
         Button pick_container_btn;
         Button skip_container_btn;
         Button undo_container_btn;
+        RelativeLayout title_row_rl;
 
         WaypointListHolder(View itemView) {
             super(itemView);
-            waypointName = (TextView)itemView.findViewById(R.id.waypoint_name);
+            title_row_rl = (RelativeLayout)itemView.findViewById(R.id.title_row);
+            card_title_tv = (TextView)itemView.findViewById(R.id.card_title);
+            card_title_extra_tv = (TextView)itemView.findViewById(R.id.card_title_extra);
             previous = (ImageView)itemView.findViewById(R.id.previous);
             next = (ImageView)itemView.findViewById(R.id.next);
-            next_tv = (TextView)itemView.findViewById(R.id.next_tv);
-            picked_tv = (TextView)itemView.findViewById(R.id.picked_tv);
-            waiting_tv = (TextView)itemView.findViewById(R.id.waiting_tv);
-            skipped_tv = (TextView)itemView.findViewById(R.id.skipped_tv);
-            metrics_ll = (LinearLayout)itemView.findViewById(R.id.metrics_ll);
-            duration_tv = (TextView)itemView.findViewById(R.id.duration_tv);
-            distance_tv = (TextView)itemView.findViewById(R.id.distance_tv);
             pick_container_btn = (Button)itemView.findViewById(R.id.pick_container_btn);
             skip_container_btn = (Button)itemView.findViewById(R.id.skip_container_btn);
             undo_container_btn = (Button)itemView.findViewById(R.id.undo_container_btn);

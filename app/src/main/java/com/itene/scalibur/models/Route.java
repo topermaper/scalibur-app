@@ -273,6 +273,21 @@ public class Route implements Parcelable {
         }
     }
 
+    public Integer stopsLeftToWaypoint(Waypoint waypoint) {
+        Integer stops_left = 0;
+
+        for (int i=waypoints.indexOf(getCurrentDestination()) + 1; i < waypoints.size(); i++) {
+            if (waypoints.get(i).couldBePicked()) {
+                stops_left +=1;
+            }
+            if (waypoint == waypoints.get(i)) {
+                break;
+            }
+        }
+
+        return stops_left;
+    }
+
 
     @Override
     public String toString() {

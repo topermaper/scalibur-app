@@ -201,6 +201,12 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         autocenter_ib.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
                 Location location = route.getLast_known_location();
+
+                if (location == null) { // Location could be null if GPS is disabled and the app would crash
+                    Toast.makeText(com.itene.scalibur.RouteMapActivity.this, "Unable to retrieve GPS location", Toast.LENGTH_SHORT).show();
+                    return;
+                }
+
                 route.setAutoCenter(true);
                 autocenter_ib.setVisibility(View.GONE);
                 mMap.animateCamera(CameraUpdateFactory.newLatLng(new LatLng(location.getLatitude(), location.getLongitude())));
