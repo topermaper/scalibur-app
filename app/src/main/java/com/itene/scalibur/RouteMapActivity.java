@@ -8,7 +8,6 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.PagerSnapHelper;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.recyclerview.widget.SnapHelper;
-
 import android.Manifest;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -62,7 +61,6 @@ import java.util.ArrayList;
 import java.util.Locale;
 import android.content.SharedPreferences;
 
-//import static com.itene.scalibur.custom.Utils.BitmapFromVector;
 
 public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnCameraMoveStartedListener, OnMapReadyCallback {
     // Used in checking for runtime permissions.
@@ -809,7 +807,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         if (shouldProvideRationale) {
             Log.i(TAG, "Displaying permission rationale to provide additional context.");
             Snackbar.make(
-                    findViewById(R.id.activity_main),
+                    findViewById(R.id.route_map_activity),
                     R.string.permission_rationale,
                     Snackbar.LENGTH_INDEFINITE)
                     .setAction(R.string.ok, new View.OnClickListener() {
