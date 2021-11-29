@@ -45,6 +45,7 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.itene.scalibur.custom.GpsServerNotifier;
 import com.itene.scalibur.custom.Utils;
 import com.itene.scalibur.data.model.LoggedInUser;
 
@@ -135,7 +136,10 @@ public class LocationUpdatesService extends Service {
      */
     private LoggedInUser user;
 
+    private GpsServerNotifier gps_server_notifier;
+
     public LocationUpdatesService() {
+        gps_server_notifier = new GpsServerNotifier(this);
     }
 
     @Override
@@ -345,7 +349,7 @@ public class LocationUpdatesService extends Service {
             Log.i(TAG, "New location, runs in foreground. Sending GPS data to API");
             Integer route_id = Utils.requestingRouteId(getApplicationContext());
             Log.i(TAG, String.format("route_id from extras: %d", route_id));
-            Utils.sendGPS(this, user.getId(), route_id, "GPS event", mLocation);
+            gps_server_notifier.registerGpsData(user.getId(), route_id, "GPS event", mLocation);
         } else {
             Log.i(TAG, "New location, runs in background");
 

@@ -1,6 +1,7 @@
 package com.itene.scalibur.custom;
 
 import android.content.Context;
+import android.media.Image;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -195,7 +196,7 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
         // It´s first element
         if (position == 0) {
             holder.card_title_extra_tv.setText("Start");
-            holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.white));
+            holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_white);
         } else {
             holder.previous.setVisibility(View.VISIBLE);
         }
@@ -203,7 +204,7 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
         // It´s last element
         if (position == route.getWaypoints().size() - 1) {
             holder.card_title_extra_tv.setText("End");
-            holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.white));
+            holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_white);
         } else {
             holder.next.setVisibility(View.VISIBLE);
         }
@@ -213,7 +214,7 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
             if (path != null) {
                 holder.card_title_extra_tv.setText(String.format("Next: %s (%s)", path.getPrettyDistance(), path.getPrettyDuration()));
             }
-            holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_red));
+            holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_red);
             if (route.getCurrentDestination().couldBePicked()) {
                 holder.pick_container_btn.setVisibility(View.VISIBLE);
             }
@@ -222,17 +223,20 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
             // Item is picked
             if (waypoint.isPicked()) {
                 holder.card_title_extra_tv.setText("Picked");
-                holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_blue));
+                holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_blue);
+                //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_blue));
                 holder.undo_container_btn.setVisibility(View.VISIBLE);
             } else if (waypoint.isSkipped()) {
                 holder.card_title_extra_tv.setText("Skipped");
-                holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_yellow));
+                holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_yellow);
+                //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_yellow));
                 holder.undo_container_btn.setVisibility(View.VISIBLE);
             } else if (waypoint.isPickable() && route.getCurrentDestination() != null) {
                 Integer stops = route.stopsLeftToWaypoint(waypoint);
                 if (stops > 0) {
                     holder.card_title_extra_tv.setText(String.format("%s stop(s) left", stops));
-                    holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_green));
+                    holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_green);
+                    //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_green));
                 }
             }
         }
@@ -254,11 +258,12 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
         TextView card_title_extra_tv;
         ImageView previous;
         ImageView next;
-        LinearLayout metrics_ll;
         Button pick_container_btn;
         Button skip_container_btn;
         Button undo_container_btn;
         RelativeLayout title_row_rl;
+        LinearLayout title_data_ll;
+        ImageView waypoint_card_bg;
 
         WaypointListHolder(View itemView) {
             super(itemView);
@@ -270,6 +275,8 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
             pick_container_btn = (Button)itemView.findViewById(R.id.pick_container_btn);
             skip_container_btn = (Button)itemView.findViewById(R.id.skip_container_btn);
             undo_container_btn = (Button)itemView.findViewById(R.id.undo_container_btn);
+            title_data_ll = (LinearLayout)itemView.findViewById(R.id.title_data);
+            waypoint_card_bg = (ImageView)itemView.findViewById(R.id.waypoint_card_bg);
 
         }
     }

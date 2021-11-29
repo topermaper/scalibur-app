@@ -2,74 +2,61 @@
 
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:card_view="http://schemas.android.com/tools"
     android:id="@+id/route_card"
-    android:visibility="visible"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="wrap_content"
+    card_view:cardPreventCornerOverlap="false"
+    app:cardElevation="0dp"
+    app:cardBackgroundColor="@android:color/transparent">
 
-    <LinearLayout
-        android:id="@+id/waypoint_ll"
+    <RelativeLayout
+        android:id="@+id/title_row"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_alignParentStart="true"
-        android:layout_alignParentEnd="true"
-        android:layout_toEndOf="@+id/previous"
-        android:layout_toStartOf="@+id/next"
-        android:orientation="vertical"
-        android:gravity="center_horizontal">
+        android:paddingVertical="3dp">
 
-        <RelativeLayout
-            android:id="@+id/title_row"
+        <ImageView
+            android:id="@+id/waypoint_card_bg"
+            android:layout_alignTop="@+id/title_data"
+            android:layout_alignBottom="@id/title_data"
             android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="fitXY"
+            android:src="@drawable/brush_bg_red"/>
+
+        <ImageView
+            android:id="@+id/previous"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
+            android:src="@drawable/previous"
+            android:layout_alignParentStart="true"
+            android:layout_centerVertical="true" />
+        <LinearLayout
+            android:id="@+id/title_data"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_toEndOf="@id/previous"
+            android:layout_toStartOf="@id/next"
+            android:gravity="center_vertical"
             android:paddingVertical="3dp">
-
-            <ImageView
-                android:id="@+id/previous"
-                android:layout_width="wrap_content"
+            <TextView
+                android:id="@+id/card_title"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:src="@drawable/previous"
-                android:layout_alignParentStart="true"
-                android:layout_centerVertical="true" />
-            <LinearLayout
-                android:layout_width="wrap_content"
+                android:text="Waypoint address"
+                android:textStyle="bold"
+                android:gravity="center"
+                android:padding="2dp"/>
+            <TextView
+                android:id="@+id/card_title_extra"
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical"
-                android:layout_toEndOf="@id/previous"
-                android:layout_toStartOf="@id/next"
-                android:gravity="center_vertical">
-                <TextView
-                    android:id="@+id/card_title"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Waypoint address"
-                    android:textStyle="bold"
-                    android:gravity="center"
-                    android:padding="2dp"/>
-                <TextView
-                    android:id="@+id/card_title_extra"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:textSize="12sp"
-                    android:text="Extra data"
-                    android:textStyle="italic"
-                    android:gravity="center" android:padding="1dp"/>
-            </LinearLayout>
-
-            <ImageView
-                android:id="@+id/next"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:src="@drawable/next"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"/>
-        </RelativeLayout>
-
-
-        <RelativeLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content">
-
+                android:textSize="12sp"
+                android:text="Extra data"
+                android:textStyle="italic"
+                android:gravity="center" android:padding="1dp"/>
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -110,10 +97,16 @@
                     android:visibility="visible"
                     android:backgroundTint="@color/scalibur_green" />
             </LinearLayout>
+        </LinearLayout>
 
-        </RelativeLayout>
-
-    </LinearLayout>
+        <ImageView
+            android:id="@+id/next"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/next"
+            android:layout_alignParentEnd="true"
+            android:layout_centerVertical="true"/>
+    </RelativeLayout>
 
 
 </androidx.cardview.widget.CardView>

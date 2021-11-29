@@ -45,6 +45,7 @@ import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.maps.android.PolyUtil;
 import com.itene.scalibur.config.RoutingMachine;
+import com.itene.scalibur.custom.GpsServerNotifier;
 import com.itene.scalibur.custom.Utils;
 import com.itene.scalibur.custom.VolleyUtils;
 import com.itene.scalibur.config.Config;
@@ -83,6 +84,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
     private LocationUpdatesService mService = null; // A reference to the service used to get location updates.
     private boolean mBound = false;    // Tracks the bound state of the service.
     private SharedPreferences sharedPreferences;
+    private GpsServerNotifier gps_server_notifier;
 
     // Monitors the state of the connection to the service.
     private final ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -118,6 +120,8 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
     protected void onCreate(Bundle savedInstanceState) {
         Log.d("API", "onCreate");
         super.onCreate(savedInstanceState);
+
+        gps_server_notifier = new GpsServerNotifier(this);
 
         route = getIntent().getParcelableExtra("route");
         user = getIntent().getParcelableExtra("user");
@@ -689,7 +693,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
             if (location != null) {
                 Log.d("API", "Receiving GPS location ...");
                 blinkGpsLocationReceivedIcon();
-                Utils.sendGPS(getApplicationContext(), user.getId(), route.getId(), "GPS event", location);
+                gps_server_notifier.registerGpsData(user.getId(), route.getId(), "GPS event", location);
                 updateRoute(location);
             }
         }
