@@ -40,7 +40,7 @@
             android:layout_toEndOf="@id/previous"
             android:layout_toStartOf="@id/next"
             android:gravity="center_vertical"
-            android:paddingVertical="3dp">
+            android:paddingVertical="1dp">
             <TextView
                 android:id="@+id/card_title"
                 android:layout_width="match_parent"
