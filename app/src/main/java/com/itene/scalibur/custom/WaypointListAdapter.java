@@ -188,11 +188,6 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
         // Set location name
         holder.card_title_tv.setText(waypoint.getPrettyName());
 
-        // If pickable, is not picked, and is not already skipped  then it can be skipped
-        if (waypoint.couldBePicked()) {
-            holder.skip_container_btn.setVisibility(View.VISIBLE);
-        }
-
         // It´s first element
         if (position == 0) {
             holder.card_title_extra_tv.setText("Start");
@@ -209,36 +204,50 @@ public class WaypointListAdapter extends RecyclerView.Adapter<WaypointListAdapte
             holder.next.setVisibility(View.VISIBLE);
         }
 
-        // Drawing the current destination
-        if (( route.getCurrentDestination() !=null ) && (route.getWaypoints().indexOf(route.getCurrentDestination()) == position )) {
-            if (path != null) {
-                holder.card_title_extra_tv.setText(String.format("Next: %s (%s)", path.getPrettyDistance(), path.getPrettyDuration()));
-            }
-            holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_red);
-            if (route.getCurrentDestination().couldBePicked()) {
-                holder.pick_container_btn.setVisibility(View.VISIBLE);
-            }
-        // It´s not the current destination
-        } else {
-            // Item is picked
-            if (waypoint.isPicked()) {
-                holder.card_title_extra_tv.setText("Picked");
-                holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_blue);
-                //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_blue));
-                holder.undo_container_btn.setVisibility(View.VISIBLE);
-            } else if (waypoint.isSkipped()) {
-                holder.card_title_extra_tv.setText("Skipped");
-                holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_yellow);
-                //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_yellow));
-                holder.undo_container_btn.setVisibility(View.VISIBLE);
-            } else if (waypoint.isPickable() && route.getCurrentDestination() != null) {
-                Integer stops = route.stopsLeftToWaypoint(waypoint);
-                if (stops > 0) {
-                    holder.card_title_extra_tv.setText(String.format("%s stop(s) left", stops));
-                    holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_green);
-                    //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_green));
+
+        switch (route.getStatus()) {
+            case FINISHED:
+            case RUNNING:
+                // If pickable, is not picked, and is not already skipped  then it can be skipped
+                if (waypoint.couldBePicked()) {
+                    holder.skip_container_btn.setVisibility(View.VISIBLE);
                 }
-            }
+                // Drawing the current destination
+                if (( route.getCurrentDestination() !=null ) && (route.getWaypoints().indexOf(route.getCurrentDestination()) == position )) {
+                    if (path != null) {
+                        holder.card_title_extra_tv.setText(String.format("Next: %s (%s)", path.getPrettyDistance(), path.getPrettyDuration()));
+                    }
+                    holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_red);
+                    if (route.getCurrentDestination().couldBePicked()) {
+                        holder.pick_container_btn.setVisibility(View.VISIBLE);
+                    }
+                    // It´s not the current destination
+                } else {
+                    // Item is picked
+                    if (waypoint.isPicked()) {
+                        holder.card_title_extra_tv.setText("Picked");
+                        holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_blue);
+                        //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_blue));
+                        holder.undo_container_btn.setVisibility(View.VISIBLE);
+                    } else if (waypoint.isSkipped()) {
+                        holder.card_title_extra_tv.setText("Skipped");
+                        holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_yellow);
+                        //holder.title_row_rl.setBackgroundColor(ContextCompat.getColor(context, R.color.light_yellow));
+                        holder.undo_container_btn.setVisibility(View.VISIBLE);
+                    } else if (waypoint.isPickable() && route.getCurrentDestination() != null) {
+                        holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_green);
+                        Integer stops = route.stopsLeftToWaypoint(waypoint);
+                        if (stops > 0) {
+                            holder.card_title_extra_tv.setText(String.format("%s stop(s) left", stops));
+                        }
+                    }
+                }
+                break;
+            case READY:
+                if (waypoint.isPickable()) {
+                    holder.waypoint_card_bg.setImageResource(R.drawable.brush_bg_green);
+                    holder.card_title_extra_tv.setText(String.format("%s stop(s) left", position));
+                }
         }
     }
 

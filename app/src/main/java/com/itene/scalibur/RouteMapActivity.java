@@ -178,8 +178,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
                     Marker marker = route.getWaypoints().get(position).getMarker();
                     marker.showInfoWindow();
                     mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()), 250, null);
-                    route.setAutoCenter(false);
-                    autocenter_ib.setVisibility(View.VISIBLE);
+                    enableAutocenterButton();
                     waypoint_rv.getAdapter().notifyDataSetChanged();
                 }
             }
@@ -305,15 +304,6 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         return true;
     }
 
-    public void onUserMapCenterChange() {
-        // User touched the map, don´t center the camera in the current position
-        // Only during running status
-        if (route.getStatus() == Route.StatusEnum.RUNNING && !route.isPaused()) {
-            route.setAutoCenter(false);
-            autocenter_ib.setVisibility(View.VISIBLE);
-        }
-    }
-
     @Override
     public void onCameraMoveStarted(int reason) {
         String reasonText = "UNKNOWN_REASON";
@@ -321,7 +311,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         switch (reason) {
             case GoogleMap.OnCameraMoveStartedListener.REASON_GESTURE:
                 reasonText = "GESTURE";
-                onUserMapCenterChange();
+                enableAutocenterButton();
                 break;
             case GoogleMap.OnCameraMoveStartedListener.REASON_API_ANIMATION:
                 reasonText = "API_ANIMATION";
@@ -393,6 +383,13 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         }
 
         return true;
+    }
+
+    private void enableAutocenterButton() {
+        if (route.getStatus() == Route.StatusEnum.RUNNING && !route.isPaused()) {
+            route.setAutoCenter(false);
+            autocenter_ib.setVisibility(View.VISIBLE);
+        }
     }
 
     private void pauseRoute() {
@@ -597,7 +594,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
                 setCurrentItem(route.getWaypoints().indexOf(waypoint), false);
                 marker.showInfoWindow();
                 mMap.animateCamera(CameraUpdateFactory.newLatLng(marker.getPosition()), 250, null);
-                onUserMapCenterChange();
+                enableAutocenterButton();
                 // Return false to continue with the default behaviour
                 return true;
             }
