@@ -10,5 +10,4 @@ public final class Config {
     public final static String API_POST_GPS = API_BASE_URL + "/api/gps/";
     public final static String API_ROUTES = API_BASE_URL + "/api/routes/"; // + route_id
     public final static String API_POST_ROUTE_CONTAINER = API_BASE_URL + "/api/routes/%d/container/%d"; // Add route_id, container_id placeholder
-    public final static String API_RM_DRIVING = API_BASE_URL +  "/mapserver/route/v1/driving/%s?overview=full"; // Place holder for coordinates
 }

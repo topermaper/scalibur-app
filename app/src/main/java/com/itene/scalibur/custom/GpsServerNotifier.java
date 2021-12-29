@@ -43,6 +43,7 @@ public class GpsServerNotifier {
             post_params.put("lat", location.getLatitude());
             post_params.put("accuracy", location.getAccuracy());
             post_params.put("speed", location.getSpeed());
+            post_params.put("bearing", location.getBearing());
             SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
             post_params.put("time", df.format(location.getTime()));
 

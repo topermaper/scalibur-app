@@ -44,7 +44,7 @@ import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 import com.google.android.material.snackbar.Snackbar;
 import com.google.maps.android.PolyUtil;
-import com.itene.scalibur.config.RoutingMachine;
+import com.itene.scalibur.config.OsrmConfig;
 import com.itene.scalibur.custom.GpsServerNotifier;
 import com.itene.scalibur.custom.Utils;
 import com.itene.scalibur.custom.VolleyUtils;
@@ -750,9 +750,10 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         if (location != null && next_waypoint != null &&  !route.isPaused() && route.getStatus().equals(Route.StatusEnum.RUNNING)) {
             String current_waypoint_str = String.format("%s,%s", location.getLongitude(), location.getLatitude());
             String next_waypoint_str = String.format("%s,%s", next_waypoint.getLongitude(), next_waypoint.getLatitude());
-            String url = String.format(Config.API_RM_DRIVING, String.format("%s;%s",current_waypoint_str, next_waypoint_str));
+            String url = String.format(OsrmConfig.ROUTE_URL, String.format("%s;%s",current_waypoint_str, next_waypoint_str));
 
-            VolleyUtils.GET_JSON(this, url, null, new VolleyUtils.VolleyJsonResponseListener() {
+            String api_token = sharedPreferences.getString("API_TOKEN", null);
+            VolleyUtils.GET_JSON(this, url, api_token, new VolleyUtils.VolleyJsonResponseListener() {
                 @Override
                 public void onError(String message) {
                     Toast.makeText(com.itene.scalibur.RouteMapActivity.this, "Can not connect with routing machine", Toast.LENGTH_SHORT).show();
