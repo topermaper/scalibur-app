@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/start_route"
+        app:showAsAction="never"
+        android:title="@string/start_route"
+        android:visible="true">
+    </item>
+    <item
+        android:id="@+id/resume_route"
+        app:showAsAction="never"
+        android:title="@string/resume_route"
+        android:visible="true">
+    </item>
+    <item
+        android:id="@+id/pause_route"
+        app:showAsAction="never"
+        android:title="@string/pause_route"
+        android:visible="true">
+    </item>
+    <item
+        android:id="@+id/finish_route"
+        app:showAsAction="never"
+        android:title="@string/finish_route"
+        android:visible="true">
+    </item>
+</menu>

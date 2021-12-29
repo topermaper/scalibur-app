@@ -2,11 +2,18 @@ package com.itene.scalibur;
 
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.cardview.widget.CardView;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import android.annotation.SuppressLint;
+import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
@@ -15,9 +22,12 @@ import android.widget.Spinner;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.itene.scalibur.custom.RouteListAdapter;
 import com.itene.scalibur.custom.VolleyUtils;
+import com.itene.scalibur.data.model.LoggedInUser;
 import com.itene.scalibur.models.Route;
 import com.itene.scalibur.ui.login.LoginActivity;
+import com.itene.scalibur.config.Config;
 
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -27,19 +37,25 @@ import java.util.List;
 
 public class SelectRouteActivity extends AppCompatActivity implements AdapterView.OnItemSelectedListener {
 
-    public final static String API_GET_CONFIRMED_ROUTES = "http://scalibur.itene.com/api/routes/Kozani/confirmed/list";
-    public final static String API_START_ROUTE = "http://scalibur.itene.com/api/routes/start/"; // + route_id
-    public final static String API_TOKEN = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4ODQwNjk5MDgsImlhdCI6MTYyNDg2OTkwOCwic3ViIjoxfQ.TMo6udWhG8RvBcpMHjZZ-6z56_gK50yJvPrF2HFqkaU";
-
+    private static final String TAG = com.itene.scalibur.SelectRouteActivity.class.getSimpleName();
+    private LinearLayoutManager lManager;
+    private RecyclerView rv_routeList;
     private Spinner sp_choose_route;
     private CardView route_card;
     private TextView tv_title, tv_time, tv_containers, tv_distance, tv_pilot, tv_slot;
     private Button mStartRouteButton;
     private Route SelectedRoute;
+    private LoggedInUser user;
+    private SharedPreferences sharedPreferences;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        user = getIntent().getParcelableExtra("user");
+        sharedPreferences = this.getSharedPreferences(
+                "com.itene.scalibur", Context.MODE_PRIVATE);
+
         setContentView(R.layout.activity_select_route);
     }
 
@@ -48,35 +64,34 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
         super.onStart();
 
         // Configure spinner
+        /*
         sp_choose_route = (Spinner) findViewById(R.id.sp_choose_route);
         sp_choose_route.setOnItemSelectedListener(this);
+        */
+
+        // Route card
+        //route_card = (CardView) findViewById(R.id.route_card);
+        // Obtener el Recycler
+
+        rv_routeList = (RecyclerView) findViewById(R.id.rv_routeList);
+        rv_routeList.setHasFixedSize(true);
+        // Add click listener
+
+        // Usar un administrador para LinearLayout
+        lManager = new LinearLayoutManager(this);
+        rv_routeList.setLayoutManager(lManager);
+
         // Load possible routes
         getRoutesConfirmed();
         // Route card elements
-        route_card = (CardView) findViewById(R.id.route_card);
+        //route_card = (CardView) findViewById(R.id.route_card);
         tv_title = (TextView) findViewById(R.id.route_title);
         tv_time = (TextView) findViewById(R.id.route_time_result);
         tv_distance = (TextView) findViewById(R.id.route_distance_result);
-        tv_pilot = (TextView) findViewById(R.id.route_pilot_result);
-        tv_slot = (TextView) findViewById(R.id.route_slot_result);
-        tv_containers = (TextView) findViewById(R.id.route_containers_result);
 
-        mStartRouteButton = (Button) findViewById(R.id.start_route);
-        mStartRouteButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                if (SelectedRoute != null) {
-                    startRoute(SelectedRoute.getId());
-                } else {
-                    //TODO: Remove this else, only debug purpose
-                    startRoute(6);
-                }
-
-            }
-        });
+        Toast.makeText(SelectRouteActivity.this, String.format("Hi %s, please select a route", user.getName()), Toast.LENGTH_LONG).show();
     }
 
-    @SuppressLint("DefaultLocale")
     @Override
     public void onItemSelected(AdapterView<?> adapterView, View view, int position, long id) {
         SelectedRoute = (Route) adapterView.getSelectedItem();
@@ -86,7 +101,7 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
             tv_time.setText(String.format("%.0f s", SelectedRoute.getTime_cost()));
             tv_distance.setText(String.format("%.0f m", SelectedRoute.getDistance_cost()));
             tv_containers.setText(String.format("%d", SelectedRoute.getN_containers()));
-            tv_pilot.setText(SelectedRoute.getPilot());
+            tv_pilot.setText(SelectedRoute.getPilot().getName());
             route_card.setVisibility(View.VISIBLE);
         }
         else
@@ -94,13 +109,43 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
     }
 
     @Override
-    public void onNothingSelected(AdapterView<?> adapterView) {
-
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.select_route_menu, menu);
+        return true;
     }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        switch (item.getItemId()) {
+            case R.id.logout:
+                logout();
+                break;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
+        return true;
+    }
+
+    private void logout() {
+        SharedPreferences sharedPreferences = this.getSharedPreferences(
+                "com.itene.scalibur", Context.MODE_PRIVATE);
+        sharedPreferences.edit().remove("API_TOKEN").apply();
+
+        Intent myIntent = new Intent(this, LoginActivity.class);
+        startActivity(myIntent);
+        setResult(Activity.RESULT_OK);
+        //Complete and destroy login activity once successful
+        finish();
+    }
+
+    @Override
+    public void onNothingSelected(AdapterView<?> adapterView) {}
 
     private void getRoutesConfirmed() {
         try {
-            VolleyUtils.GET_JSON_ARRAY(this, API_GET_CONFIRMED_ROUTES, API_TOKEN, new VolleyUtils.VolleyJsonArrayResponseListener() {
+            String api_token = sharedPreferences.getString("API_TOKEN", null);
+            VolleyUtils.GET_JSON_ARRAY(this, Config.API_GET_ROUTES, api_token, new VolleyUtils.VolleyJsonArrayResponseListener() {
                 @Override
                 public void onError(String message) {
                     Log.e("API", "No se puede leer en la plataforma, error: " + message);
@@ -116,10 +161,10 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
                         {
                             mRouteList.add(new Route(response.getJSONObject(i)));
                         }
-                        ArrayAdapter<Route> adapter_choose_route = new ArrayAdapter<Route>(getApplicationContext(), android.R.layout.simple_spinner_item, mRouteList);
-                        //ArrayAdapter<CharSequence> adapter_choose_route = ArrayAdapter.createFromResource(this, R.array.route_options, android.R.layout.simple_spinner_item);
-                        adapter_choose_route.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
-                        sp_choose_route.setAdapter(adapter_choose_route);
+
+                        RouteListAdapter adapter_route_card = new RouteListAdapter(mRouteList, SelectRouteActivity.this);
+                        rv_routeList.setAdapter(adapter_route_card);
+
                     } catch (Exception e) {
                         e.printStackTrace();
                     }
@@ -130,29 +175,4 @@ public class SelectRouteActivity extends AppCompatActivity implements AdapterVie
         }
     }
 
-    private void startRoute(int route_id) {
-        try {
-            VolleyUtils.GET_JSON(this, API_START_ROUTE + route_id , API_TOKEN, new VolleyUtils.VolleyJsonResponseListener() {
-                @Override
-                public void onError(String message) {
-                    Log.e("API", "No se puede leer en la plataforma, error: " + message);
-                }
-
-                @Override
-                public void onResponse(JSONObject response) {
-                    try {
-                        Log.d("API", "Ruta iniciada");
-                        //Toast.makeText(com.itene.scalibur.SelectRouteActivity.this, "Route started successfully", Toast.LENGTH_SHORT).show();
-                        Intent myIntent = new Intent(SelectRouteActivity.this, MainActivity.class);
-                        myIntent.putExtra("route_id", route_id); //Optional parameters
-                        startActivity(myIntent);
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
 }

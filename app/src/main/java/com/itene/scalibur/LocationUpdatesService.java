@@ -45,7 +45,9 @@ import com.google.android.gms.location.LocationResult;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.Task;
+import com.itene.scalibur.custom.GpsServerNotifier;
 import com.itene.scalibur.custom.Utils;
+import com.itene.scalibur.data.model.LoggedInUser;
 
 /**
  * A bound and started service that is promoted to a foreground service when location updates have
@@ -129,11 +131,20 @@ public class LocationUpdatesService extends Service {
      */
     private Location mLocation;
 
+    /**
+     * Logged in user reference
+     */
+    private LoggedInUser user;
+
+    private GpsServerNotifier gps_server_notifier;
+
     public LocationUpdatesService() {
+        gps_server_notifier = new GpsServerNotifier(this);
     }
 
     @Override
     public void onCreate() {
+        Log.i(TAG, "in onCreate");
         mFusedLocationClient = LocationServices.getFusedLocationProviderClient(this);
 
         mLocationCallback = new LocationCallback() {
@@ -181,6 +192,7 @@ public class LocationUpdatesService extends Service {
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
+        Log.d(TAG, "in onConfigurationChanged");
         super.onConfigurationChanged(newConfig);
         mChangingConfiguration = true;
     }
@@ -191,6 +203,7 @@ public class LocationUpdatesService extends Service {
         // and binds with this service. The service should cease to be a foreground service
         // when that happens.
         Log.i(TAG, "in onBind()");
+        user = intent.getParcelableExtra("user");
         stopForeground(true);
         mChangingConfiguration = false;
         return mBinder;
@@ -209,14 +222,13 @@ public class LocationUpdatesService extends Service {
 
     @Override
     public boolean onUnbind(Intent intent) {
-        Log.i(TAG, "Last client unbound from service");
+        Log.i(TAG, "in onUnbind - Last client unbound from service");
 
         // Called when the last client (MainActivity in case of this sample) unbinds from this
         // service. If this method is called due to a configuration change in MainActivity, we
         // do nothing. Otherwise, we make this service a foreground service.
         if (!mChangingConfiguration && Utils.requestingLocationUpdates(this)) {
             Log.i(TAG, "Starting foreground service");
-
             startForeground(NOTIFICATION_ID, getNotification());
         }
         return true; // Ensures onRebind() is called when a client re-binds.
@@ -224,6 +236,7 @@ public class LocationUpdatesService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.i(TAG, "in onDestroy");
         mServiceHandler.removeCallbacksAndMessages(null);
     }
 
@@ -264,6 +277,7 @@ public class LocationUpdatesService extends Service {
      * Returns the {@link NotificationCompat} used as part of the foreground service.
      */
     private Notification getNotification() {
+        Log.i(TAG, "getNotification");
         Intent intent = new Intent(this, com.itene.scalibur.LocationUpdatesService.class);
 
         CharSequence text = Utils.getLocationText(mLocation);
@@ -277,7 +291,7 @@ public class LocationUpdatesService extends Service {
 
         // The PendingIntent to launch activity.
         PendingIntent activityPendingIntent = PendingIntent.getActivity(this, 0,
-                new Intent(this, com.itene.scalibur.MainActivity.class), 0);
+                new Intent(this, com.itene.scalibur.RouteMapActivity.class), 0);
 
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this)
                 .addAction(R.drawable.ic_launch, getString(R.string.launch_activity),
@@ -331,6 +345,14 @@ public class LocationUpdatesService extends Service {
         // Update notification content if running as a foreground service.
         if (serviceIsRunningInForeground(this)) {
             mNotificationManager.notify(NOTIFICATION_ID, getNotification());
+            // SEND GPS TO API
+            Log.i(TAG, "New location, runs in foreground. Sending GPS data to API");
+            Integer route_id = Utils.requestingRouteId(getApplicationContext());
+            Log.i(TAG, String.format("route_id from extras: %d", route_id));
+            gps_server_notifier.registerGpsData(user.getId(), route_id, "GPS event", mLocation);
+        } else {
+            Log.i(TAG, "New location, runs in background");
+
         }
     }
 

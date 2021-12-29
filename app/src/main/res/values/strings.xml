@@ -7,7 +7,7 @@
     <string name="action_sign_in_short">Sign in</string>
     <string name="welcome">"Welcome !"</string>
     <string name="invalid_username">Not a valid username</string>
-    <string name="invalid_password">Password must be >5 characters</string>
+    <string name="invalid_password">Password must be between 6 and 30 characters long</string>
     <string name="login_failed">"Login failed"</string>
 
     <string name="launch_activity">Launch activity</string>
@@ -22,17 +22,20 @@
     <string name="request_location_updates">Request location updates</string>
     <string name="remove_location_updates">Remove location updates</string>
     <string name="load_route_locations">Load route locations</string>
-    <string name="finish_route">Finish route</string>
 
     <string name="location_updated">Location Updated: %1$s</string>
     <string name="choose_route">Please select the route day slot to be performed</string>
     <string name="choose_route_prompt">Choose route:</string>
-    <string name="start_route">Start route</string>
     <string name="confirm">Confirm</string>
 
     <string name="dialog_title_stretch">Container recover</string>
     <string name="dialog_confirm_stretch">Has the container been recovered?</string>
     <string name="yes">Yes</string>
     <string name="no">No</string>
+    <string name="start_route">Start route</string>
+    <string name="resume_route">Resume route</string>
+    <string name="finish_route">Finish route</string>
+    <string name="pause_route">Pause route</string>
+    <string name="logout">Logout</string>
 
 </resources>
