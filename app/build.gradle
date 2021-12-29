@@ -7,7 +7,7 @@ android {
 
     defaultConfig {
         applicationId "com.itene.scalibur"
-        minSdkVersion 23
+        minSdkVersion 24
         targetSdkVersion 30
         versionCode 1
         versionName "1.0"
@@ -24,6 +24,62 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    def versionPropsFile = file('version.properties')
+    def value = 0
+    Properties versionProps = new Properties()
+    if (!versionPropsFile.exists()) {
+        versionProps['VERSION_PATCH'] = "0"
+        versionProps['VERSION_NUMBER'] = "1"
+        versionProps['VERSION_BUILD'] = "0" // I set it to minus one so the first build is 0 which isn't super important.
+        versionProps.store(versionPropsFile.newWriter(), null)
+    }
+
+    def runTasks = gradle.startParameter.taskNames
+    if ('assembleRelease' in runTasks) {
+        value = 1
+    }
+
+    def mVersionName = ""
+    def mFileName = ""
+
+    if (versionPropsFile.canRead()) {
+        versionProps.load(new FileInputStream(versionPropsFile))
+
+        versionProps['VERSION_PATCH'] = (versionProps['VERSION_PATCH'].toInteger() + value).toString()
+        versionProps['VERSION_NUMBER'] = (versionProps['VERSION_NUMBER'].toInteger() + value).toString()
+        versionProps['VERSION_BUILD'] = (versionProps['VERSION_BUILD'].toInteger() + 1).toString()
+
+        versionProps.store(versionPropsFile.newWriter(), null)
+
+        // 1: change major and minor version here
+        mVersionName = "v1.0.${versionProps['VERSION_PATCH']}"
+        // 2: change AppName for your app name
+        mFileName = "scalibur-${mVersionName}.apk"
+
+        defaultConfig {
+            applicationId "com.itene.scalibur"
+            minSdkVersion 24
+            targetSdkVersion 30
+            versionCode versionProps['VERSION_NUMBER'].toInteger()
+            versionName "${mVersionName} Build: ${versionProps['VERSION_BUILD']}"
+
+            testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        }
+
+    } else {
+        throw new FileNotFoundException("Could not read version.properties!")
+    }
+
+    if ('assembleRelease' in runTasks) {
+        applicationVariants.all { variant ->
+            variant.outputs.all { output ->
+                if (output.outputFile != null && output.outputFile.name.endsWith('.apk')) {
+                    outputFileName = mFileName
+                }
+            }
+        }
     }
 }
 

@@ -5,6 +5,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
@@ -12,6 +14,7 @@ import android.view.WindowManager;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.itene.scalibur.config.Config;
 import com.itene.scalibur.custom.VolleyUtils;
@@ -48,6 +51,10 @@ public class SplashScreenActivity extends AppCompatActivity {
         // Set activity layout
         setContentView(R.layout.splash_screen);
 
+        // Set app version
+        TextView version_tv = (TextView) findViewById(R.id.version);
+        version_tv.setText(getVersion());
+
         // Start animation
         ImageView logo = (ImageView)findViewById(R.id.splash_scalibur_logo);
         Animation slideAnimation = AnimationUtils.loadAnimation(this, R.anim.splash_animation);
@@ -82,6 +89,18 @@ public class SplashScreenActivity extends AppCompatActivity {
         } else {
             return 0;
         }
+    }
+
+    private String getVersion() {
+        String version= "";
+        try {
+            PackageInfo pInfo = this.getPackageManager().getPackageInfo(this.getPackageName(), 0);
+            version = pInfo.versionName;
+        } catch (PackageManager.NameNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return version;
     }
 
     private void startLoginActivity() {

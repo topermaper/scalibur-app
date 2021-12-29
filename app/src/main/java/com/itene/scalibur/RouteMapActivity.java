@@ -146,10 +146,8 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         myReceiver = new RouteMapActivity.MyReceiver();
 
         // Check that the user hasn't revoked permissions by going to Settings.
-        if (Utils.requestingLocationUpdates(this)) {
-            if (!checkPermissions()) {
-                requestPermissions();
-            }
+        if (!checkPermissions()) {
+            requestPermissions();
         }
 
         waypoint_rv.setHasFixedSize(true);
