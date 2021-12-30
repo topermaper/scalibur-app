@@ -60,7 +60,7 @@ android {
 
         defaultConfig {
             applicationId "com.itene.scalibur"
-            minSdkVersion 24
+            minSdkVersion 23
             targetSdkVersion 30
             versionCode versionProps['VERSION_NUMBER'].toInteger()
             versionName "${mVersionName} Build: ${versionProps['VERSION_BUILD']}"

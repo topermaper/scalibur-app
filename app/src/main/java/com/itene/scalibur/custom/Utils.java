@@ -113,6 +113,7 @@ public class Utils {
         }
     }
 
+    /*
     public static Bitmap rotateAndFlipTruckBitmap(Bitmap bitmap, float bearing){
 
         float rotation;
@@ -129,5 +130,15 @@ public class Utils {
 
         Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
         return rotatedBitmap;
+    }*/
+
+    public static Bitmap rotateBitmap(Bitmap bitmap, float bearing){
+        Matrix matrix = new Matrix();
+        matrix.setRotate(bearing,bitmap.getWidth()/2,bitmap.getHeight()/2);
+        matrix.postScale((float)0.5,(float)0.5);
+        Bitmap rotatedBitmap = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), matrix, true);
+        return rotatedBitmap;
     }
+
+
 }

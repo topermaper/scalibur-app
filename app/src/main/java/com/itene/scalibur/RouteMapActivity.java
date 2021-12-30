@@ -698,8 +698,8 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         if (location != null) {
             LatLng current_position = new LatLng(location.getLatitude(), location.getLongitude());
 
-            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.garbage_truck);
-            bitmap = Utils.rotateAndFlipTruckBitmap(bitmap, location.getBearing());
+            Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.circle_arrow);
+            bitmap = Utils.rotateBitmap(bitmap, location.getBearing());
 
             try { // Remove last known location marker if exists
                 route.getLast_known_location().getMarker().remove();
@@ -707,7 +707,7 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
                 Log.w(TAG, "Can not remove last location marker. Null location or marker");
             }
 
-            // Add current position truck marker
+            // Add current position marker
             Marker marker = mMap.addMarker(new MarkerOptions()
                     .position(current_position)
                     .anchor(0.5f, 0.5f)
