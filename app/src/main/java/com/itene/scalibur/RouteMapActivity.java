@@ -132,8 +132,6 @@ public class RouteMapActivity extends AppCompatActivity implements GoogleMap.OnC
         // Set US locale, converts doubles to string using dot
         Locale.setDefault(Locale.US);
 
-        //auto_center_cam=true;
-
         setContentView(R.layout.route_map);
         MapFragment mapFragment = (MapFragment) getFragmentManager().findFragmentById(R.id.map);
         mapFragment.getMapAsync(this);

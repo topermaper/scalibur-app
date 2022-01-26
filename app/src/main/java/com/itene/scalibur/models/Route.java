@@ -58,7 +58,7 @@ public class Route implements Parcelable {
             this.pilot = new Pilot(json.getJSONObject("pilot_detail"));
             this.slot = json.getString("slot");
             this.created_at = Calendar.getInstance();
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSSZ", Locale.getDefault()); //2021-11-03T08:16:02.323025+00:00
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSSSS", Locale.getDefault()); //2021-11-03T08:16:02.323025+00:00
             this.created_at.setTime(Objects.requireNonNull(sdf.parse(json.getString("created_at"))));
             this.waypoints = new ArrayList<Waypoint>();
 
