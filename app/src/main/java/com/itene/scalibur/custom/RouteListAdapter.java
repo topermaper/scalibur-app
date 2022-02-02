@@ -8,11 +8,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
-import android.widget.Toast;
 import androidx.recyclerview.widget.RecyclerView;
 
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.model.LatLng;
 import com.itene.scalibur.R;
 import com.itene.scalibur.RouteMapActivity;
 import com.itene.scalibur.SelectRouteActivity;

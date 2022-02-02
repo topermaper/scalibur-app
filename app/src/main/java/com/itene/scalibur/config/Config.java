@@ -4,7 +4,7 @@ public final class Config {
     public static final String API_BASE_URL = "http://scalibur.itene.com";
     public static final String API_GET_ME =  API_BASE_URL + "/api/users/me";
     public final static String API_POST_LOGIN = API_BASE_URL + "/api/users/login";
-    public final static String API_GET_ROUTES = API_BASE_URL + "/api/routes/Kozani?status=RUNNING,READY";
+    public final static String API_GET_ROUTES = API_BASE_URL + "/api/routes/Kozani";
     public final static String API_START_ROUTE = API_BASE_URL + "/api/routes/%d/start"; // Add route_id placeholder
     public final static String API_END_ROUTE = API_BASE_URL + "/api/routes/%d/end"; // Add route_id placeholder
     public final static String API_POST_GPS = API_BASE_URL + "/api/gps/";
